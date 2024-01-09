@@ -10,9 +10,87 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Status {
+  APPROVE
+  WAITING
+  REJECT
+}
+
 model Role {
   id         Int      @id @default(autoincrement())
   name       String
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  users      User[]
+}
+
+model User {
+  id       BigInt    @id @default(autoincrement())
+  email    String
+  password String
+  role     Role      @relation(fields: [roleId], references: [id])
+  roleId   Int
+  employee Employee?
+}
+
+model TypeOfEmployee {
+  id            Int        @id @default(autoincrement())
+  isContract    Boolean
+  startContract DateTime   @db.Date
+  endContract   DateTime?  @db.Date
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  employees     Employee[]
+}
+
+model Positions {
+  id        Int        @id @default(autoincrement())
+  name      String
+  employees Employee[]
+}
+
+model Employee {
+  nik              String         @id
+  name             String
+  startWorking     DateTime       @db.Date
+  isWorking        Boolean
+  positions        Positions      @relation(fields: [positionId], references: [id])
+  positionId       Int
+  historicalName   String
+  historicalNik    String
+  user             User           @relation(fields: [userId], references: [id])
+  userId           BigInt         @unique
+  typeOfEmployee   TypeOfEmployee @relation(fields: [typeOfEmployeeId], references: [id])
+  typeOfEmployeeId Int
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+  leaves           Leave[]
+}
+
+model TypeOfLeave {
+  id         Int      @id @default(autoincrement())
+  name       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  leaves     Leave[]
+}
+
+model AmountOfLeave {
+  id     Int     @id @default(autoincrement())
+  amount Int
+  leaves Leave[]
+}
+
+model Leave {
+  id              Int           @id @default(autoincrement())
+  typeOfLeave     TypeOfLeave   @relation(fields: [typeOfLeaveId], references: [id])
+  typeOfLeaveId   Int
+  startLeave      DateTime      @db.Date
+  endLeave        DateTime      @db.Date
+  reason          String
+  amountOfLeave   AmountOfLeave @relation(fields: [amountOfLeaveId], references: [id])
+  amountOfLeaveId Int
+  status          Status        @default(WAITING)
+  employee        Employee      @relation(fields: [employeeNik], references: [nik])
+  employeeNik     String
 }
