@@ -18,4 +18,4 @@ module.exports = {
   sum,
   successResponse,
   errorResponse,
-}
+};
