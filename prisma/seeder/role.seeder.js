@@ -19,7 +19,7 @@ const roles = [
 ];
 
 async function roleSeed() {
-  for (const role of roles) {
+  for (let role of roles) {
     await prisma.role.create({
       data: role,
     });
