@@ -1,5 +1,5 @@
-const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 
 /**
  * @param {import('express').Application} app
