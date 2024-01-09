@@ -1,6 +1,5 @@
-!-- Dokumentation -->
-
 ## Dokumentation
+
 This is a server for In Room Service System. It is made with [Node.js](https://nodejs.org/en/download/) and [Express](https://expressjs.com/). The database is made with [PostgreSQL](https://www.postgresql.org/).
 
 ## Table of Contents
@@ -83,6 +82,7 @@ git push origin feature/<feature-name>
 - [Postman](https://www.postman.com/downloads/)
 
 # Database
+
 This folder contains the database structure, database migrations and model to create the database and its tables for Pembagian Cuti using Prisma (Javascript).
 
 - [Database](#database)
@@ -95,9 +95,11 @@ This folder contains the database structure, database migrations and model to cr
   - [Step by step guide to revert a migration](#step-by-step-guide-to-revert-a-migration)
 
 # Requirements
+
 - PostgreSQL
 
 # Getting Started
+
 1. open the `.env_example` file and copy its content.
 2. Create a new file named `.env` and paste the content.
 

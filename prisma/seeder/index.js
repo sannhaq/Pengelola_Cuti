@@ -2,8 +2,8 @@ const { prisma } = require("./config");
 const { roleSeed } = require("./role.seeder");
 
 async function main() {
-    // user seed
-    await roleSeed();
+  // user seed
+  await roleSeed();
 }
 
 main()

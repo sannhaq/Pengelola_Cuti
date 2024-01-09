@@ -1,29 +1,29 @@
-const { prisma } = require("./config");
+const { prisma } = require('./config');
 
 const roles = [
-    {
-      name: "Super Admin",
-      created_at: new Date(),
-      updated_at: new Date(),
-    },
-    {
-      name: "Admin",
-      created_at: new Date(),
-      updated_at: new Date(),
-    },
-    {
-      name: "User",
-      created_at: new Date(),
-      updated_at: new Date(),
-    },
-  ];
+  {
+    name: 'Super Admin',
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    name: 'Admin',
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    name: 'User',
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+];
 
-  async function roleSeed() {
-    for (let role of roles) {
-     await prisma.role.create({
-        data: role,
-      });
-    }
+async function roleSeed() {
+  for (const role of roles) {
+    await prisma.role.create({
+      data: role,
+    });
   }
+}
 
-  module.exports = { roleSeed };
+module.exports = { roleSeed };
