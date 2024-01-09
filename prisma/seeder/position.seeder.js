@@ -1,5 +1,5 @@
 const { prisma } = require("./config")
-const { faker } = require("@faker-js/faker")
+const { faker } = require('@faker-js/faker')
 
 const generateFakePositions = () => {
   return {
