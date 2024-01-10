@@ -1,4 +1,4 @@
-const { prisma } = require('./config')
+const { prisma } = require('./config');
 
 const roles = [
   {
@@ -16,14 +16,14 @@ const roles = [
     created_at: new Date(),
     updated_at: new Date(),
   },
-]
+];
 
 async function roleSeed() {
   for (let role of roles) {
     await prisma.role.create({
       data: role,
-    })
+    });
   }
 }
 
-module.exports = { roleSeed }
+module.exports = { roleSeed };
