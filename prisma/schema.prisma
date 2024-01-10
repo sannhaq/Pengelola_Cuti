@@ -3,7 +3,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/client"
 }
 
 datasource db {
@@ -26,12 +25,13 @@ model Role {
 }
 
 model User {
-  id       BigInt    @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   email    String
   password String
   role     Role      @relation(fields: [roleId], references: [id])
   roleId   Int
   employee Employee?
+  tokens UserToken[]
 }
 
 model TypeOfEmployee {
@@ -60,7 +60,7 @@ model Employee {
   historicalName   String
   historicalNik    String
   user             User           @relation(fields: [userId], references: [id])
-  userId           BigInt         @unique
+  userId           Int         @unique
   typeOfEmployee   TypeOfEmployee @relation(fields: [typeOfEmployeeId], references: [id])
   typeOfEmployeeId Int
   created_at       DateTime       @default(now())
@@ -94,4 +94,12 @@ model Leave {
   status          Status        @default(WAITING)
   employee        Employee      @relation(fields: [employeeNik], references: [nik])
   employeeNik     String
+}
+
+model UserToken {
+  id Int @id @default(autoincrement())
+  refreshToken String @unique
+  user User @relation(fields: [userId], references: [id])
+  userId Int
+  expired_at DateTime
 }

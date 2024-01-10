@@ -9,7 +9,6 @@ function errorResponse(res, message, data, code = 500) {
 /**
  * @param {import('express').Response} res
  */
-
 function successResponse(res, message, data, code = 200) {
   res.status(code).json({ success: true, message, data });
 }
