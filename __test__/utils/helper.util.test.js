@@ -1,6 +1,6 @@
-const response = require('../../src/utils/response.util');
-const express = require('express')
-const app = express()
+const response = require('../../src/utils/helper.util');
+const express = require('express');
+const app = express();
 
 test('adds 1 + 2 to equal 3', () => {
   expect(response.sum(1, 2)).toBe(3);
