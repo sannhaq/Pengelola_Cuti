@@ -13,7 +13,7 @@ CREATE TABLE "Role" (
 
 -- CreateTable
 CREATE TABLE "User" (
-    "id" BIGSERIAL NOT NULL,
+    "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "roleId" INTEGER NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE "Employee" (
     "positionId" INTEGER NOT NULL,
     "historicalName" TEXT NOT NULL,
     "historicalNik" TEXT NOT NULL,
-    "userId" BIGINT NOT NULL,
+    "userId" INTEGER NOT NULL,
     "typeOfEmployeeId" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -90,8 +90,21 @@ CREATE TABLE "Leave" (
     CONSTRAINT "Leave_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "UserToken" (
+    "id" SERIAL NOT NULL,
+    "refreshToken" TEXT NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "expired_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserToken_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Employee_userId_key" ON "Employee"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserToken_refreshToken_key" ON "UserToken"("refreshToken");
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -113,3 +126,6 @@ ALTER TABLE "Leave" ADD CONSTRAINT "Leave_amountOfLeaveId_fkey" FOREIGN KEY ("am
 
 -- AddForeignKey
 ALTER TABLE "Leave" ADD CONSTRAINT "Leave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserToken" ADD CONSTRAINT "UserToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
