@@ -5,9 +5,7 @@ const { PrismaClient } = require('@prisma/client');
 const { configServer } = require('./src/configs/server.config');
 
 // routers
-const employeeRoute = require('./src/routes/employee.route');
-const leaveRoute = require('./src/routes/leave.route');
-
+const routes = require('./src/routes/index.route');
 // config
 const config = require('./src/configs/general.config');
 
@@ -27,8 +25,12 @@ configServer(app);
 app.get('/', (req, res) => {
   res.send('Hello world');
 });
-app.use('/employee', employeeRoute);
-app.use('/leave', leaveRoute);
+
+app.get('/test', (req, res) => {
+  res.send('Bintang baghdad anjay');
+});
+
+app.use('/api', routes);
 
 // logger
 const server = app.listen(port, host, () => {

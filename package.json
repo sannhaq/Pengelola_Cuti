@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "imports": {
-    "#*": "./src/*"
-  },
+
   "scripts": {
     "test": "jest",
     "format:check": "prettier --check .",
