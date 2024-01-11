@@ -111,4 +111,30 @@ async function logout(req, res) {
   return successResponse(res, 'Logout success');
 }
 
-module.exports = { login, refresh, logout };
+async function me(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const employee = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        employee: {
+          select: {
+            nik: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!employee) {
+      return errorResponse(res, 'user not found', '', 404);
+    }
+
+    return successResponse(res, 'Me success', employee);
+  } catch {
+    return errorResponse(res, 'Internal server error', '', 500);
+  }
+}
+
+module.exports = { login, refresh, logout, me };
