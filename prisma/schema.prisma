@@ -25,13 +25,13 @@ model Role {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
+  id       Int         @id @default(autoincrement())
   email    String
   password String
-  role     Role      @relation(fields: [roleId], references: [id])
+  role     Role        @relation(fields: [roleId], references: [id])
   roleId   Int
   employee Employee?
-  tokens UserToken[]
+  tokens   UserToken[]
 }
 
 model TypeOfEmployee {
@@ -60,7 +60,7 @@ model Employee {
   historicalName   String
   historicalNik    String
   user             User           @relation(fields: [userId], references: [id])
-  userId           Int         @unique
+  userId           Int            @unique
   typeOfEmployee   TypeOfEmployee @relation(fields: [typeOfEmployeeId], references: [id])
   typeOfEmployeeId Int
   created_at       DateTime       @default(now())
@@ -97,9 +97,9 @@ model Leave {
 }
 
 model UserToken {
-  id Int @id @default(autoincrement())
-  refreshToken String @unique
-  user User @relation(fields: [userId], references: [id])
-  userId Int
-  expired_at DateTime
+  id           Int      @id @default(autoincrement())
+  refreshToken String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  userId       Int
+  expired_at   DateTime
 }
