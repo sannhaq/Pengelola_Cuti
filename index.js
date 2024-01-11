@@ -5,7 +5,7 @@ const { PrismaClient } = require('@prisma/client');
 const { configServer } = require('./src/configs/server.config');
 
 // routers
-
+const routes = require('./src/routes/index.route');
 // config
 const config = require('./src/configs/general.config');
 
@@ -29,6 +29,8 @@ app.get('/', (req, res) => {
 app.get('/test', (req, res) => {
   res.send('Bintang baghdad anjay');
 });
+
+app.use('/api', routes);
 
 // logger
 const server = app.listen(port, host, () => {
