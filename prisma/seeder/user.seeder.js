@@ -4,7 +4,7 @@ const { faker } = require('@faker-js/faker');
 const generateFakeUser = () => {
   return {
     email: faker.internet.email(),
-    password: faker.internet.password(),
+    password: '$2b$10$CfyAJ93EMuDJBhNdEnn5n.hhOa8/5RnZ.XHjbylgU/97hcxP3l5Yi',
     roleId: 3,
   };
 };
