@@ -26,7 +26,15 @@ async function userSeed() {
     },
   });
 
-  for (let i = 0; i < 50; i++) {
+  await prisma.user.create({
+    data: {
+      email: 'user@gmail.com',
+      password: '$2b$10$CfyAJ93EMuDJBhNdEnn5n.hhOa8/5RnZ.XHjbylgU/97hcxP3l5Yi',
+      roleId: 3,
+    },
+  });
+
+  for (let i = 0; i < 49; i++) {
     const fakeUser = generateFakeUser();
     await prisma.user.create({
       data: fakeUser,
