@@ -15,7 +15,7 @@ const lastNik = async () => {
 
 describe('GET /employee', () => {
   it('Should get all employees', async () => {
-    const response = await request(app).get('/employee');
+    const response = await request(app).get('/api/employee');
     expect(response.statusCode).toBe(200);
     expect(response.body).toHaveProperty('data');
     expect(response.body.data).toBeInstanceOf(Array);
@@ -25,7 +25,7 @@ describe('GET /employee', () => {
 describe('GET /employee/:nik', () => {
   it('Should get employees by NIK', async () => {
     const nik = await lastNik();
-    const response = await request(app).get(`/employee/${nik}`);
+    const response = await request(app).get(`/api/employee/detail/${nik}`);
     expect(response.statusCode).toBe(200);
     expect(response.body).toHaveProperty('data');
   });

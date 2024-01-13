@@ -1,4 +1,4 @@
-const errorResponse = require('../utils/helper.util');
+const { errorResponse } = require('../utils/helper.util');
 
 /**
  * @param {string[]} roles
