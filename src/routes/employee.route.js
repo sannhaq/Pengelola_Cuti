@@ -37,7 +37,10 @@ router.post(
   employeeController.changePassword,
 );
 
+// POST Reset Password
+router.post('/reset-password/:nik', roleMiddleware('Admin'), employeeController.resetPassword);
+
 // POST Employee
-// router.post('/create', employeeController.create);
+router.post('/add', roleMiddleware('Super Admin', 'Admin'), employeeController.addEmployee);
 
 module.exports = router;

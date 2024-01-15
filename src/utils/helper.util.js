@@ -36,8 +36,8 @@ function paginator(defaultOptions) {
           currPage: page,
           lastPage,
           perPage,
-          skip, // tambahkan ini
-          take: perPage, // tambahkan ini
+          skip,
+          take: perPage,
           prev: page > 1 ? page - 1 : null,
           next: page < lastPage ? page + 1 : null,
         },

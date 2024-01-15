@@ -53,12 +53,12 @@ model Positions {
 model Employee {
   nik              String         @id
   name             String
-  startWorking     DateTime       @db.Date
   isWorking        Boolean
   positions        Positions      @relation(fields: [positionId], references: [id])
   positionId       Int
   historicalName   String
   historicalNik    String
+  amountOfLeave    Int
   user             User           @relation(fields: [userId], references: [id])
   userId           Int            @unique
   typeOfEmployee   TypeOfEmployee @relation(fields: [typeOfEmployeeId], references: [id])
@@ -76,24 +76,16 @@ model TypeOfLeave {
   leaves     Leave[]
 }
 
-model AmountOfLeave {
-  id     Int     @id @default(autoincrement())
-  amount Int
-  leaves Leave[]
-}
-
 model Leave {
-  id              Int           @id @default(autoincrement())
-  typeOfLeave     TypeOfLeave   @relation(fields: [typeOfLeaveId], references: [id])
-  typeOfLeaveId   Int
-  startLeave      DateTime      @db.Date
-  endLeave        DateTime      @db.Date
-  reason          String
-  amountOfLeave   AmountOfLeave @relation(fields: [amountOfLeaveId], references: [id])
-  amountOfLeaveId Int
-  status          Status        @default(WAITING)
-  employee        Employee      @relation(fields: [employeeNik], references: [nik])
-  employeeNik     String
+  id            Int         @id @default(autoincrement())
+  typeOfLeave   TypeOfLeave @relation(fields: [typeOfLeaveId], references: [id])
+  typeOfLeaveId Int
+  startLeave    DateTime    @db.Date
+  endLeave      DateTime    @db.Date
+  reason        String
+  status        Status      @default(WAITING)
+  employee      Employee    @relation(fields: [employeeNik], references: [nik])
+  employeeNik   String
 }
 
 model UserToken {

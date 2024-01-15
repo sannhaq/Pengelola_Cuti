@@ -2,6 +2,8 @@ const { PrismaClient } = require('@prisma/client');
 
 const { validationResult } = require('express-validator');
 
+const nodemailer = require('nodemailer');
+const schedule = require('node-schedule');
 const moment = require('moment');
 const bcrypt = require('bcrypt');
 
@@ -28,15 +30,7 @@ async function getAll(req, res) {
             name: true,
           },
         },
-        leaves: {
-          select: {
-            amountOfLeave: {
-              select: {
-                amount: true,
-              },
-            },
-          },
-        },
+        amountOfLeave: true,
         isWorking: true,
       },
       skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
@@ -140,7 +134,6 @@ async function disableEmployee(req, res) {
       return errorResponse(res, 'Employee has already been disabled', '', 400);
     }
 
-    // Mengubah isWorking menjadi false
     await prisma.employee.update({
       where: {
         nik: employeeNik,
@@ -202,15 +195,7 @@ async function getMe(req, res) {
           select: {
             nik: true,
             name: true,
-            leaves: {
-              select: {
-                amountOfLeave: {
-                  select: {
-                    amount: true,
-                  },
-                },
-              },
-            },
+            amountOfLeave: true,
           },
         },
       },
@@ -315,6 +300,192 @@ async function changePassword(req, res) {
   }
 }
 
+async function resetPassword(req, res) {
+  const { nik } = req.params;
+
+  try {
+    const employee = await prisma.employee.findUnique({
+      where: {
+        nik,
+      },
+    });
+
+    if (!employee) {
+      return errorResponse(res, 'Employee not found', '', 404);
+    }
+
+    const defaultPassword = 'password';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    await prisma.user.update({
+      where: {
+        id: employee.userId,
+      },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    return successResponse(res, 'Password reset successfully', hashedPassword, 200);
+  } catch (error) {
+    console.error(error);
+    return errorResponse(res, 'An error occurred while resetting the password', '', 500);
+  }
+}
+
+async function addEmployee(req, res) {
+  const { nik, name, email, isContract, startContract, endContract, positionId } = req.body;
+  const { user } = req;
+
+  try {
+    // Check if email is unique
+    const existingEmployee = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (existingEmployee) {
+      return errorResponse(res, 'Email is already in use', '', 400);
+    }
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: historicalName, nik: historicalNik } = employeeData;
+
+    // Set default password
+    const defaultPassword = 'password';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    // Create employee in the database
+    const createdEmployee = await prisma.employee.create({
+      data: {
+        nik,
+        name,
+        isWorking: true,
+        historicalName,
+        historicalNik,
+        positions: {
+          connect: { id: positionId },
+        },
+        typeOfEmployee: {
+          create: {
+            isContract,
+            startContract: moment.utc(startContract).toDate(),
+            endContract: isContract ? moment.utc(endContract).toDate() : null,
+          },
+        },
+        amountOfLeave: isContract ? 0 : 12,
+        user: {
+          create: {
+            email,
+            password: hashedPassword,
+            role: {
+              connect: {
+                id: 3,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const employeeCreationDate = moment.utc(startContract);
+
+    const monthsOfWork = moment.utc().diff(employeeCreationDate, 'months');
+
+    if (monthsOfWork >= 4 && moment().isBefore(moment.utc(endContract))) {
+      const amountToAdd = monthsOfWork - 3;
+
+      await prisma.employee.update({
+        where: {
+          nik,
+        },
+        data: {
+          amountOfLeave: {
+            increment: amountToAdd,
+          },
+        },
+      });
+
+      const startContractDate = moment.utc(startContract).toDate();
+
+      const rule = new schedule.RecurrenceRule();
+      rule.date = startContractDate.getDate();
+      rule.month = new schedule.Range(0, 11);
+
+      schedule.scheduleJob(rule, async () => {
+        const employeeScheduled = await prisma.employee.findUnique({
+          where: {
+            nik,
+          },
+        });
+
+        if (employeeScheduled) {
+          const { endContract: endContractScheduled } = employeeScheduled;
+
+          const monthsOfWorkScheduled = moment.utc().diff(moment.utc(startContract), 'months');
+
+          if (moment().isBefore(moment.utc(endContractScheduled)) && monthsOfWorkScheduled >= 4) {
+            const amountToAddScheduled = monthsOfWorkScheduled - 3;
+
+            // Update karyawan dengan penambahan "amountOfLeave"
+            await prisma.employee.update({
+              where: {
+                nik,
+              },
+              data: {
+                amountOfLeave: {
+                  increment: amountToAddScheduled,
+                },
+              },
+            });
+          }
+        }
+      });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: 'Welcome to the Company',
+      text: `Dear ${name},\n\nWelcome to the company!\n\nYour login credentials:\nEmail: ${email}\nSecret Key: ${defaultPassword}\n\nBest regards,\nThe Company`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+      } else {
+        console.log('Email sent:', info.response);
+      }
+    });
+
+    return successResponse(res, 'Employee added successfully', createdEmployee, 201);
+  } catch (error) {
+    console.error(error);
+    return errorResponse(res, 'An error occurred while adding the employee', '', 500);
+  }
+}
+
 module.exports = {
   getAll,
   getNIK,
@@ -323,4 +494,6 @@ module.exports = {
   getMe,
   updateEmployee,
   changePassword,
+  resetPassword,
+  addEmployee,
 };
