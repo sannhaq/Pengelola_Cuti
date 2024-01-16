@@ -19,9 +19,12 @@ const {
 
 async function getAll(req, res) {
   try {
+    // Extract page and perPage from query parameters
     const { page, perPage } = req.query;
+    // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.employee, { page, perPage });
 
+    // Fetch employees with selected fields and positions' names
     const employees = await prisma.employee.findMany({
       select: {
         name: true,
@@ -34,18 +37,22 @@ async function getAll(req, res) {
         amountOfLeave: true,
         isWorking: true,
       },
+      // Calculate skip and take based on pagination information
       skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
       take: pagination.meta.perPage,
     });
 
+    // Format employees data for response
     const formattedEmployees = employees.map((employee) => ({
       ...employee,
       positions: {
+        // Display '-' for positions' name if not working
         ...employee.positions,
         name: employee.isWorking ? employee.positions.name : '-',
       },
     }));
 
+    // Return success response with paginated employee data
     return successResponseWithPage(
       res,
       'Successfully retrieved employees',
@@ -55,14 +62,17 @@ async function getAll(req, res) {
     );
   } catch (error) {
     console.error('Error getting employees:', error);
+    // Return error response if an error occurs
     return errorResponse(res, 'Failed to get employees', '', 500);
   }
 }
 
 async function getNIK(req, res) {
   try {
+    // Extract NIK from request parameters
     const { nik } = req.params;
 
+    // Fetch employee data from the database using Prisma
     const employee = await prisma.employee.findMany({
       where: {
         nik,
@@ -93,12 +103,15 @@ async function getNIK(req, res) {
       },
     });
 
+    // Check if the response from the database is in the expected array format
     if (!Array.isArray(employee)) {
       return errorResponse(res, 'Invalid data format', '', 500);
     }
 
+    // Format the employee data for better readability
     const formattedData = formatEmployeeData(employee);
 
+    // Transform the data: set endContract to null if the employee is not on contract
     const transformedData = formattedData.map((data) => {
       if (!data.typeOfEmployee.isContract) {
         data.typeOfEmployee.endContract = null;
@@ -106,21 +119,26 @@ async function getNIK(req, res) {
       return data;
     });
 
+    // Return a 404 response if no employee is found with the given NIK
     if (formattedData.length === 0) {
       return errorResponse(res, 'Employee not found', '', 404);
     }
 
+    // Return a successful response with the transformed data
     return successResponse(res, 'Successfully retrieved employee data', transformedData, 200);
   } catch (error) {
+    // Log and return an error response if any exception occurs
     console.error('Error getting employee data:', error);
     return errorResponse(res, 'Failed to get employee data', '', 500);
   }
 }
 
 async function disableEmployee(req, res) {
+  // Extract employee NIK from request parameters
   const employeeNik = req.params.nik;
 
   try {
+    // Fetch the employee from the database using Prisma
     const employee = await prisma.employee.findUnique({
       where: {
         nik: employeeNik,
@@ -135,6 +153,7 @@ async function disableEmployee(req, res) {
       return errorResponse(res, 'Employee has already been disabled', '', 400);
     }
 
+    // Update the employee's working status to false
     await prisma.employee.update({
       where: {
         nik: employeeNik,
@@ -169,6 +188,7 @@ async function enableEmployee(req, res) {
       return errorResponse(res, 'Employee has already been enabled', '', 400);
     }
 
+    // Update the employee's working status to true
     await prisma.employee.update({
       where: {
         nik: employeeNik,
@@ -189,6 +209,7 @@ async function getMe(req, res) {
   try {
     const userId = req.user.id;
 
+    // Fetch user data, including associated employee data, from the database using Prisma
     const employee = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -202,6 +223,7 @@ async function getMe(req, res) {
       },
     });
 
+    // Return a 404 response if no user is found with the given ID
     if (!employee) {
       return errorResponse(res, 'User not found', '', 404);
     }
@@ -218,6 +240,7 @@ async function updateEmployee(req, res) {
   const { name, positionId, typeOfEmployee } = req.body;
 
   try {
+    // Fetch the existing employee data from the database using Prisma
     const employee = await prisma.employee.findUnique({
       where: {
         nik: employeeNik,
@@ -232,7 +255,9 @@ async function updateEmployee(req, res) {
       return errorResponse(res, 'Employee not found', '', 404);
     }
 
+    // Check if the authenticated user has admin privileges
     if (req.user.role.name === 'Admin') {
+      // Prepare update data for admin user
       const updateData = {
         name,
         positions: {
@@ -249,6 +274,7 @@ async function updateEmployee(req, res) {
         },
       };
 
+      // Update employee data with the prepared data
       await prisma.employee.update({
         where: {
           nik: employeeNik,
@@ -256,6 +282,7 @@ async function updateEmployee(req, res) {
         data: updateData,
       });
     } else if (req.user.role.name === 'User') {
+      // Update employee name for non-admin user
       await prisma.employee.update({
         where: {
           nik: employeeNik,
@@ -281,11 +308,14 @@ async function changePassword(req, res) {
   }
 
   try {
+    // Extract the new password and authenticated user information from the request
     const { newPassword } = req.body;
     const { user } = req;
 
+    // Hash the new password using bcrypt
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
+    // Update the user's password in the database
     await prisma.user.update({
       where: {
         id: user.id,
@@ -306,6 +336,7 @@ async function resetPassword(req, res) {
   const { nik } = req.params;
 
   try {
+    // Fetch the employee data, including associated user data, from the database using Prisma
     const employee = await prisma.employee.findUnique({
       where: {
         nik,
@@ -323,6 +354,7 @@ async function resetPassword(req, res) {
     const randomPassword = crypto.randomBytes(8).toString('hex');
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
+    // Update the user's password in the database
     await prisma.user.update({
       where: {
         id: employee.userId,
@@ -332,7 +364,7 @@ async function resetPassword(req, res) {
       },
     });
 
-    // Kirim email
+    // Send an email with the new password using Nodemailer
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
@@ -351,6 +383,7 @@ async function resetPassword(req, res) {
       text: `Your password has been reset. Your new password is:\nSecret Key: ${randomPassword}`,
     };
 
+    // Send the email and log the response
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error('Error sending email:', error);
@@ -412,6 +445,25 @@ async function addEmployee(req, res) {
         // Tambahkan amountOfLeave setiap bulan setelah 3 bulan bekerja
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
         amountOfLeave = Math.max(monthsOfWork - 2, 0);
+
+        // Tambahkan amountOfLeave setiap bulan
+        const startContractDate = moment.utc(startContract).toDate();
+        const rule = new schedule.RecurrenceRule();
+        rule.date = startContractDate.getDate();
+        rule.month = new schedule.Range(0, 11);
+
+        schedule.scheduleJob(rule, async () => {
+          await prisma.employee.update({
+            where: {
+              nik,
+            },
+            data: {
+              amountOfLeave: {
+                increment: 1,
+              },
+            },
+          });
+        });
         
       } else {
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
@@ -475,7 +527,19 @@ async function addEmployee(req, res) {
           },
         },
       },
-    });    
+    });
+
+    // Reset amountOfLeave ke 12 jika tahun baru dimulai
+    if (!isContract && moment().format('YYYY') !== moment(startContract).format('YYYY')) {
+      await prisma.employee.update({
+        where: {
+          nik,
+        },
+        data: {
+          amountOfLeave: 12,
+        },
+      });
+    }
 
     // Konfigurasi transporter untuk mengirim email
     const transporter = nodemailer.createTransport({
