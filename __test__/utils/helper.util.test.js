@@ -1,5 +1,7 @@
-const response = require('../../src/utils/helper.util');
+/* eslint-disable no-undef */
 const express = require('express');
+const response = require('../../src/utils/helper.util');
+
 const app = express();
 
 test('adds 1 + 2 to equal 3', () => {

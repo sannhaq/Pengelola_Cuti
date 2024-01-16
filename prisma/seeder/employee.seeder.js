@@ -10,9 +10,9 @@ async function employeeSeed() {
     const employee = {
       nik: i.toString(),
       name: faker.person.fullName(),
-      startWorking: new Date(),
       isWorking: generateRandomBoolean(),
       positionId: faker.number.int({ min: 1, max: 10 }),
+      amountOfLeave: faker.number.int({ min: 9, max: 20 }),
       historicalName: faker.person.fullName(),
       historicalNik: i.toString(),
       amountOfLeave: faker.number.int({ min: 9, max: 20 }),
