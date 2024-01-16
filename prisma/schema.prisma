@@ -39,6 +39,7 @@ model TypeOfEmployee {
   isContract    Boolean
   startContract DateTime   @db.Date
   endContract   DateTime?  @db.Date
+  newContract   Boolean
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
   employees     Employee[]
