@@ -1,4 +1,3 @@
-const { amountSeed } = require('./amount-of-leave.seeder');
 const { prisma } = require('./config');
 const { employeeSeed } = require('./employee.seeder');
 const { leaveSeed } = require('./leave.seeder');
@@ -15,7 +14,6 @@ async function main() {
   await positionSeed();
   await typeOfEmployeeSeed();
   await typeOfLeaveSeed();
-  await amountSeed();
   await employeeSeed();
   await leaveSeed();
 }
