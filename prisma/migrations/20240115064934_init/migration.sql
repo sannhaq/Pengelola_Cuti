@@ -27,6 +27,7 @@ CREATE TABLE "TypeOfEmployee" (
     "isContract" BOOLEAN NOT NULL,
     "startContract" DATE NOT NULL,
     "endContract" DATE,
+    "newContract" BOOLEAN NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

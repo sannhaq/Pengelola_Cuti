@@ -13,7 +13,7 @@ router.get('/', roleMiddleware('Super Admin', 'Admin'), employeeController.getAl
 router.get('/detail/:nik', roleMiddleware('Super Admin', 'Admin'), employeeController.getNIK);
 
 // GET Employee login
-router.get('/me', roleMiddleware('User'), employeeController.getMe);
+router.get('/me', roleMiddleware('Admin', 'User'), employeeController.getMe);
 
 // POST Disable employee
 router.post('/disable/:nik', roleMiddleware('Admin'), employeeController.disableEmployee);
