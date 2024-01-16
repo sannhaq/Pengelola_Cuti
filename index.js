@@ -4,6 +4,10 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { configServer } = require('./src/configs/server.config');
 
+//openssl
+const https = require('https');
+const fs = require('fs');
+
 // routers
 const routes = require('./src/routes/index.route');
 // config
@@ -21,6 +25,12 @@ const prisma = new PrismaClient({
 });
 configServer(app);
 
+const options = {
+  key: fs.readFileSync('certificates/key.pem'),
+  cert: fs.readFileSync('certificates/cert.pem'),
+};
+
+const server = https.createServer(options, app);
 // endpoint
 app.get('/', (req, res) => {
   res.send('Hello world');
@@ -33,6 +43,6 @@ app.get('/test', (req, res) => {
 app.use('/api', routes);
 
 // logger
-const server = app.listen(port, host, () => {
-  console.log(`The server is running on http://${host}:${port}`);
+server.listen(port, host, () => {
+  console.log(`The server is running on https://${host}:${port}`);
 });
