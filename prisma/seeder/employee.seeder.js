@@ -15,6 +15,7 @@ async function employeeSeed() {
       amountOfLeave: faker.number.int({ min: 9, max: 20 }),
       historicalName: faker.person.fullName(),
       historicalNik: i.toString(),
+      amountOfLeave: faker.number.int({ min: 9, max: 20 }),
       userId: i,
       typeOfEmployeeId: i,
       created_at: new Date(),

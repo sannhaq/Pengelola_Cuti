@@ -33,10 +33,11 @@ async function login(req, res) {
     },
   });
 
-  res.cookie('refresh_token', encrypt(refreshToken.refreshToken), {
+  const encryptedRefreshToken = encrypt(refreshToken.refreshToken);
+  res.cookie('refresh_token', encryptedRefreshToken, {
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
+    sameSite: 'None',
     expires,
   });
 
@@ -45,7 +46,8 @@ async function login(req, res) {
     subject: user.id.toString(),
   });
 
-  delete user.password;
+  const userData = { user, accessToken, encryptedRefreshToken };
+  delete userData.user.password;
   return successResponse(res, 'Login success', { user, accessToken });
 }
 
@@ -61,7 +63,8 @@ async function refresh(req, res) {
     refreshToken = await prisma.userToken.findUniqueOrThrow({
       where: { refreshToken },
     });
-  } catch {
+  } catch (e) {
+    console.log(e);
     return errorResponse(res, 'Invalid refresh token');
   }
 
@@ -83,7 +86,7 @@ async function refresh(req, res) {
   res.cookie('refresh_token', encrypt(newRefreshToken.refreshToken), {
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
+    sameSite: 'None',
     expires,
   });
 
