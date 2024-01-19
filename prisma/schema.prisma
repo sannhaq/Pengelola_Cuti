@@ -54,7 +54,6 @@ model Positions {
 model Employee {
   nik              String            @id
   name             String
-  startWorking     DateTime          @db.Date
   isWorking        Boolean
   positions        Positions         @relation(fields: [positionId], references: [id])
   positionId       Int

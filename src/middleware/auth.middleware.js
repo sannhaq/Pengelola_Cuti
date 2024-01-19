@@ -23,6 +23,7 @@ async function auth(req, res, next) {
     });
     return next();
   } catch (e) {
+    console.log(e);
     return errorResponse(res, 'Unauthenticated', '', 401);
   }
 }
