@@ -6,9 +6,8 @@ const {
   successResponse,
   calculateLeaveAmount,
   paginate,
-
+  successResponseWithPage,
 } = require('../utils/helper.util');
-const { tr } = require('@faker-js/faker');
 
 async function getLeaveHistoryNik(req, res) {
   try {
@@ -59,7 +58,7 @@ async function getLeaveHistoryNik(req, res) {
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
     }));
 
-    return successResponse(
+    return successResponseWithPage(
       res,
       'Successfully retrieved leave history',
       allLeaves,
@@ -136,7 +135,7 @@ async function getLeaveHistoryMe(req, res) {
       },
     };
 
-    return successResponse(
+    return successResponseWithPage(
       res,
       'Successfully retrieved leave history',
       sanitizedUser,
@@ -189,7 +188,7 @@ async function mandatoryLeave(req, res) {
       leaveUse: calculateLeaveAmount(leave.startLeave, leave.endLeave),
     }));
 
-    return successResponse(
+    return successResponseWithPage(
       res,
       'Successfully retrieved mandatory leave',
       formattedLeaves,
@@ -264,7 +263,7 @@ async function optionalLeave(req, res) {
       },
     };
 
-    return successResponse(
+    return successResponseWithPage(
       res,
       'Successfully retrieved leave history',
       sanitizedUser,
