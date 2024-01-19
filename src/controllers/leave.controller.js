@@ -5,7 +5,6 @@ const {
   errorResponse,
   successResponse,
   calculateLeaveAmount,
-  formatLeaveHistoryData,
 } = require('../utils/helper.util');
 
 async function getLeaveHistoryNik(req, res) {
@@ -17,6 +16,12 @@ async function getLeaveHistoryNik(req, res) {
         employeeNik: nik,
       },
       select: {
+        employee: {
+          select: {
+            nik: true,
+            name: true,
+          },
+        },
         status: true,
         typeOfLeave: {
           select: {
@@ -35,13 +40,7 @@ async function getLeaveHistoryNik(req, res) {
       amountOfLeave: calculateLeaveAmount(leave.startLeave, leave.endLeave),
     }));
 
-    console.log('leaveHistoryWithAmount:', leaveHistoryWithAmount);
-
-    const formattedData = formatLeaveHistoryData(leaveHistoryWithAmount);
-
-    console.log('formattedData:', formattedData);
-
-    return successResponse(res, 'Successfully retrieved leave history', formattedData, 200);
+    return successResponse(res, 'Successfully retrieved leave history', leaveHistoryWithAmount, 200);
   } catch (error) {
     console.error('Error getting leave history:', error);
     return errorResponse(res, 'Failed to get leave history', '', 500);
