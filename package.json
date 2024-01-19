@@ -10,8 +10,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "prepare": "husky install"
+    "dev": "nodemon index.js"
   },
   "author": "",
   "license": "ISC",

@@ -27,6 +27,7 @@ CREATE TABLE "TypeOfEmployee" (
     "isContract" BOOLEAN NOT NULL,
     "startContract" DATE NOT NULL,
     "endContract" DATE,
+    "newContract" BOOLEAN NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -76,8 +77,6 @@ CREATE TABLE "Leave" (
     "startLeave" DATE NOT NULL,
     "endLeave" DATE NOT NULL,
     "reason" TEXT NOT NULL,
-    "status" "Status" NOT NULL DEFAULT 'WAITING',
-    "employeeNik" TEXT NOT NULL,
 
     CONSTRAINT "Leave_pkey" PRIMARY KEY ("id")
 );
@@ -90,6 +89,16 @@ CREATE TABLE "UserToken" (
     "expired_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "UserToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeaveEmployee" (
+    "id" SERIAL NOT NULL,
+    "leaveId" INTEGER NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "status" "Status" NOT NULL DEFAULT 'WAITING',
+
+    CONSTRAINT "LeaveEmployee_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -117,7 +126,10 @@ ALTER TABLE "Employee" ADD CONSTRAINT "Employee_typeOfEmployeeId_fkey" FOREIGN K
 ALTER TABLE "Leave" ADD CONSTRAINT "Leave_typeOfLeaveId_fkey" FOREIGN KEY ("typeOfLeaveId") REFERENCES "TypeOfLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Leave" ADD CONSTRAINT "Leave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "UserToken" ADD CONSTRAINT "UserToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserToken" ADD CONSTRAINT "UserToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LeaveEmployee" ADD CONSTRAINT "LeaveEmployee_leaveId_fkey" FOREIGN KEY ("leaveId") REFERENCES "Leave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LeaveEmployee" ADD CONSTRAINT "LeaveEmployee_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
