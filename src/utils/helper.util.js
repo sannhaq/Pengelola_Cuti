@@ -1,3 +1,5 @@
+const { z } = require('zod');
+
 function sum(a, b) {
   return a + b;
 }
@@ -85,7 +87,7 @@ function formatDateObjectToDDMMYYYY(dateObject) {
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
 
-  return `${day}/${month}/${year}`;
+  return `${day}-${month}-${year}`;
 }
 
 function formatEmployeeData(data) {
@@ -111,6 +113,30 @@ function formatLeaveHistoryData(data) {
   }));
 }
 
+function validate(scheme) {
+  /**
+   * @param {import('express').Request} req
+   * @param {import('express').Response} res
+   * @param {import('express').NextFunction} next
+   */
+  return (req, res, next) => {
+    try {
+      scheme.parse({
+        body: req.body,
+        query: req.query,
+        params: req.params,
+      });
+
+      return next();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return errorResponse(res, error.errors[0].message, null, 400);
+      }
+      return errorResponse(res, 'Internal server error', error.message, 500);
+    }
+  };
+}
+
 module.exports = {
   sum,
   successResponse,
@@ -121,4 +147,5 @@ module.exports = {
   formatDateObjectToDDMMYYYY,
   formatEmployeeData,
   formatLeaveHistoryData,
+  validate
 };

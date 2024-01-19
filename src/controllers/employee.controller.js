@@ -20,12 +20,13 @@ const {
 async function getAll(req, res) {
   try {
     // Extract page and perPage from query parameters
-    const { page, perPage } = req.query;
+    const { page, perPage, search } = req.query;
+
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.employee, { page, perPage });
 
-    // Fetch employees with selected fields and positions' names
-    const employees = await prisma.employee.findMany({
+    // Build base query with selected fields
+    let baseQuery = {
       select: {
         name: true,
         nik: true,
@@ -40,7 +41,23 @@ async function getAll(req, res) {
       // Calculate skip and take based on pagination information
       skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
       take: pagination.meta.perPage,
-    });
+    };
+
+    // Build search conditions dynamically based on provided search parameter
+    if (search) {
+      const searchConditions = {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { nik: { contains: search } },
+          { positions: { name:  { contains: search, mode: 'insensitive' } }, isWorking: true },
+        ],
+      };
+
+      baseQuery = { ...baseQuery, where: searchConditions };
+    }
+
+    // Fetch employees with selected fields and positions' names based on search conditions
+    const employees = await prisma.employee.findMany(baseQuery);
 
     // Format employees data for response
     const formattedEmployees = employees.map((employee) => ({
@@ -96,6 +113,11 @@ async function getNIK(req, res) {
         user: {
           select: {
             email: true,
+            role: {
+              select: {
+                name: true
+              }
+            }
           },
         },
         historicalName: true,
@@ -237,7 +259,7 @@ async function getMe(req, res) {
 
 async function updateEmployee(req, res) {
   const employeeNik = req.params.nik;
-  const { name, positionId, typeOfEmployee } = req.body;
+  const { name, positionId, typeOfEmployee, roleId  } = req.body;
 
   try {
     // Fetch the existing employee data from the database using Prisma
@@ -248,6 +270,11 @@ async function updateEmployee(req, res) {
       include: {
         positions: true,
         typeOfEmployee: true,
+        user: {
+          select: {
+            role: true
+          },
+        },
       },
     });
 
@@ -256,8 +283,8 @@ async function updateEmployee(req, res) {
     }
 
     // Check if the authenticated user has admin privileges
-    if (req.user.role.name === 'Admin') {
-      // Prepare update data for admin user
+    if (req.user.role.name === 'Admin' || req.user.role.name === 'Super Admin') {
+      // Menyiapkan data pembaruan untuk pengguna admin atau super admin
       const updateData = {
         name,
         positions: {
@@ -266,15 +293,25 @@ async function updateEmployee(req, res) {
         typeOfEmployee: {
           update: {
             isContract: typeOfEmployee.isContract,
-            newContract: typeOfEmployee.isContract,
+            newContract: typeOfEmployee.isContract ? typeOfEmployee.newContract : false,
             endContract: typeOfEmployee.isContract
               ? moment.utc(typeOfEmployee.endContract).format()
               : null,
           },
         },
+        // Jika roleId disediakan dalam body permintaan, perbarui peran
+        ...(roleId && {
+          user: {
+            update: {
+              role: {
+                connect: { id: roleId },
+              },
+            },
+          },
+        }),
       };
 
-      // Update employee data with the prepared data
+      // Memperbarui data karyawan dengan data yang sudah disiapkan
       await prisma.employee.update({
         where: {
           nik: employeeNik,
@@ -291,7 +328,7 @@ async function updateEmployee(req, res) {
           name,
         },
       });
-    }
+    } 
 
     return successResponse(res, 'Employee updated successfully', employee, 200);
   } catch (error) {
@@ -442,41 +479,43 @@ async function addEmployee(req, res) {
     if (isContract) {
       if (newContract) {
         // Logika untuk newContract true
-        // Tambahkan amountOfLeave setiap bulan setelah 3 bulan bekerja
+        // Tambahkan amountOfLeave setelah 3 bulan bekerja
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
-        amountOfLeave = Math.max(monthsOfWork - 2, 0);
-
-        // Tambahkan amountOfLeave setiap bulan
-        const startContractDate = moment.utc(startContract).toDate();
-        const rule = new schedule.RecurrenceRule();
-        rule.date = startContractDate.getDate();
-        rule.month = new schedule.Range(0, 11);
-
-        schedule.scheduleJob(rule, async () => {
-          await prisma.employee.update({
-            where: {
-              nik,
-            },
-            data: {
-              amountOfLeave: {
-                increment: 1,
+        if (monthsOfWork >= 3) {
+          amountOfLeave = Math.max(monthsOfWork - 2, 0);;
+          // Tambahkan amountOfLeave setiap bulan
+          const startContractDate = moment.utc(startContract).toDate();
+          const rule = new schedule.RecurrenceRule();
+          rule.date = startContractDate.getDate();
+          rule.month = new schedule.Range(0, 11);
+    
+          schedule.scheduleJob(rule, async () => {
+            await prisma.employee.update({
+              where: {
+                nik,
               },
-            },
+              data: {
+                amountOfLeave: {
+                  increment: 1,
+                },
+              },
+            });
           });
-        });
-        
+        } else {
+          // Jika belum bekerja lebih dari 3 bulan, set amountOfLeave menjadi 0
+          amountOfLeave = 0;
+        }
       } else {
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
         // Logika untuk newContract false
         // Tambahkan amountOfLeave di bulan pertama
-        amountOfLeave = monthsOfWork;
-
+        amountOfLeave = Math.max(1 + monthsOfWork, 1);
         // Tambahkan amountOfLeave setiap bulan
         const startContractDate = moment.utc(startContract).toDate();
         const rule = new schedule.RecurrenceRule();
         rule.date = startContractDate.getDate();
         rule.month = new schedule.Range(0, 11);
-
+    
         schedule.scheduleJob(rule, async () => {
           await prisma.employee.update({
             where: {
@@ -579,6 +618,22 @@ async function addEmployee(req, res) {
   }
 }
 
+async function getPositions(req, res) {
+  try {
+    const positions = await prisma.positions.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    return successResponse(res, 'Successfully retrieved positions', positions, 200);
+  } catch (error) {
+    console.error('Error getting positions:', error);
+    return errorResponse(res, 'Failed to get positions', error.message || 'Internal server error', 500);
+  }
+}
+
 module.exports = {
   getAll,
   getNIK,
@@ -589,4 +644,5 @@ module.exports = {
   changePassword,
   resetPassword,
   addEmployee,
+  getPositions,
 };
