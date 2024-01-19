@@ -4,7 +4,7 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { configServer } = require('./src/configs/server.config');
 
-//openssl
+// openssl
 const https = require('https');
 const fs = require('fs');
 
