@@ -617,28 +617,6 @@ async function addEmployee(req, res) {
     return errorResponse(res, 'An error occurred while adding the employee', '', 500);
   }
 }
-
-async function getPositions(req, res) {
-  try {
-    const positions = await prisma.positions.findMany({
-      select: {
-        id: true,
-        name: true,
-      },
-    });
-
-    return successResponse(res, 'Successfully retrieved positions', positions, 200);
-  } catch (error) {
-    console.error('Error getting positions:', error);
-    return errorResponse(
-      res,
-      'Failed to get positions',
-      error.message || 'Internal server error',
-      500,
-    );
-  }
-}
-
 module.exports = {
   getAll,
   getNIK,
@@ -649,5 +627,4 @@ module.exports = {
   changePassword,
   resetPassword,
   addEmployee,
-  getPositions,
 };

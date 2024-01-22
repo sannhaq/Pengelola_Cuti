@@ -5,7 +5,10 @@ const { body } = require('express-validator');
 const employeeController = require('../controllers/employee.controller');
 const roleMiddleware = require('../middleware/role.middleware');
 const auth = require('../middleware/auth.middleware');
-const { addEmmployeeInputValidation, editEmmployeeInputValidation } = require('../validations/employee/Employee.validation');
+const {
+  addEmmployeeInputValidation,
+  editEmmployeeInputValidation,
+} = require('../validations/employee/Employee.validation');
 
 // GET All Employee
 router.get('/', roleMiddleware('Super Admin', 'Admin'), employeeController.getAll);
@@ -41,9 +44,11 @@ router.post(
 router.post('/reset-password/:nik', roleMiddleware('Admin'), employeeController.resetPassword);
 
 // POST Employee
-router.post('/add', roleMiddleware('Super Admin', 'Admin'), addEmmployeeInputValidation, employeeController.addEmployee);
-
-// GET All Positions for edit employee
-router.get('/positions', roleMiddleware('Super Admin', 'Admin'), employeeController.getPositions)
+router.post(
+  '/add',
+  roleMiddleware('Super Admin', 'Admin'),
+  addEmmployeeInputValidation,
+  employeeController.addEmployee,
+);
 
 module.exports = router;
