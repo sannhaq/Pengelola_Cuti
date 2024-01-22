@@ -19,8 +19,8 @@ const {
 
 async function getAll(req, res) {
   try {
-    // Extract page and perPage from query parameters
-    const { page, perPage, search } = req.query;
+    // Extract page, perPage, search, and orderBy from query parameters
+    const { page, perPage, search, orderBy } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.employee, { page, perPage });
@@ -49,14 +49,20 @@ async function getAll(req, res) {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { nik: { contains: search } },
-          { positions: { name:  { contains: search, mode: 'insensitive' } }, isWorking: true },
+          { positions: { name: { contains: search, mode: 'insensitive' } }, isWorking: true },
         ],
       };
 
       baseQuery = { ...baseQuery, where: searchConditions };
     }
 
-    // Fetch employees with selected fields and positions' names based on search conditions
+    // Add orderBy condition based on the orderBy parameter
+    if (orderBy) {
+      const [field, order] = orderBy.split('_'); // Split the orderBy parameter into field and order
+      baseQuery = { ...baseQuery, orderBy: { [field]: order } };
+    }
+
+    // Fetch employees with selected fields and positions' names based on search conditions and orderBy
     const employees = await prisma.employee.findMany(baseQuery);
 
     // Format employees data for response
@@ -83,6 +89,7 @@ async function getAll(req, res) {
     return errorResponse(res, 'Failed to get employees', '', 500);
   }
 }
+
 
 async function getNIK(req, res) {
   try {
@@ -359,6 +366,7 @@ async function changePassword(req, res) {
       },
       data: {
         password: hashedNewPassword,
+        isFirst: false,
       },
     });
 
@@ -398,6 +406,7 @@ async function resetPassword(req, res) {
       },
       data: {
         password: hashedPassword,
+        isFirst: true,
       },
     });
 
@@ -558,6 +567,7 @@ async function addEmployee(req, res) {
           create: {
             email,
             password: hashedPassword,
+            isFirst: true,
             role: {
               connect: {
                 id: 3,
@@ -618,22 +628,6 @@ async function addEmployee(req, res) {
   }
 }
 
-async function getPositions(req, res) {
-  try {
-    const positions = await prisma.positions.findMany({
-      select: {
-        id: true,
-        name: true,
-      },
-    });
-
-    return successResponse(res, 'Successfully retrieved positions', positions, 200);
-  } catch (error) {
-    console.error('Error getting positions:', error);
-    return errorResponse(res, 'Failed to get positions', error.message || 'Internal server error', 500);
-  }
-}
-
 module.exports = {
   getAll,
   getNIK,
@@ -644,5 +638,4 @@ module.exports = {
   changePassword,
   resetPassword,
   addEmployee,
-  getPositions,
 };

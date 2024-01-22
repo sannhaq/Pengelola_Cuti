@@ -9,9 +9,6 @@ const addEmployeeInputScheme = z.object({
         name: z.string({
             required_error: 'Name Is Required',
         }),
-        positionId: z.number({
-            required_error: 'Positions Is Required',
-        }),
         email: z.string({
             required_error: 'Email Is Required',
         }),
@@ -22,10 +19,7 @@ const editEmployeeInputScheme = z.object({
     body: z.object({
         name: z.string({
             required_error: 'Name Is Required',
-        }),
-        positionId: z.number({
-            required_error: 'Positions Is Required',
-        }),
+        })
     })
 });
 

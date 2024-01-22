@@ -43,7 +43,4 @@ router.post('/reset-password/:nik', roleMiddleware('Admin'), employeeController.
 // POST Employee
 router.post('/add', roleMiddleware('Super Admin', 'Admin'), addEmmployeeInputValidation, employeeController.addEmployee);
 
-// GET All Positions for edit employee
-router.get('/positions', roleMiddleware('Super Admin', 'Admin'), employeeController.getPositions)
-
 module.exports = router;
