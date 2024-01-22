@@ -23,6 +23,7 @@ const validate = function validateMiddleware(inputSchema) {
         req.body = await z.object(schema).strict().parseAsync(req.body);
       }
     } catch (e) {
+      console.log(e);
       return errorResponse(res, 'Validation error', e.errors, 422);
     }
     return next();
