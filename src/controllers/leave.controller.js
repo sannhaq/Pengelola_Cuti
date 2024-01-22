@@ -8,6 +8,7 @@ const {
   paginate,
   successResponseWithPage,
 } = require('../utils/helper.util');
+const { meta } = require('eslint-plugin-prettier');
 
 async function getLeaveHistoryNik(req, res) {
   try {
@@ -562,6 +563,13 @@ async function rejectPersonalLeave(req, res) {
       leaveEmployeeInfo.leave.endLeave,
     );
 
+    //update status menjadi reject
+    const updateStatus = await prisma.leaveEmployee.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: 'REJECT',
+      },
+    });
     //menambahkan kembali amount of leave jika status leave sudah approve
     if (leaveEmployeeInfo.status === 'APPROVE') {
       await prisma.employee.update({
@@ -573,18 +581,95 @@ async function rejectPersonalLeave(req, res) {
         },
       });
     }
-
-    //update status menjadi reject
-    const updateStatus = await prisma.leaveEmployee.update({
-      where: { id: parseInt(id) },
-      data: {
-        status: 'REJECT',
-      },
-    });
     return successResponse(res, 'Leave status updated to REJECT', updateStatus);
   } catch (e) {
     console.log(e);
     return errorResponse(res, 'Internal server error', null);
+  }
+}
+
+async function allLeaves(req, res) {
+  try {
+    // Extract page and perPage from query parameters
+    const { page, perPage, search, status } = req.query;
+    // Perform pagination using custom paginate function
+    const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
+
+    //objek filter untuk search
+    const filter = {};
+    if (search) {
+      filter.OR = [
+        {
+          employee: {
+            name: { contains: search, mode: 'insensitive' },
+          },
+        },
+        {
+          leave: {
+            reason: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+      ];
+    }
+
+    //objek filter status
+    if (status) {
+      if (typeof status === 'string') {
+        filter.status = status.toUpperCase();
+      } else {
+        throw new Error('Invalid status parameter');
+      }
+    }
+
+    const leaveHistory = await prisma.leaveEmployee.findMany({
+      where: filter,
+      include: {
+        employee: {
+          select: {
+            nik: true,
+            name: true,
+          },
+        },
+        leave: {
+          select: {
+            id: true,
+            typeOfLeave: {
+              select: {
+                name: true,
+              },
+            },
+            reason: true,
+            startLeave: true,
+            endLeave: true,
+          },
+        },
+      },
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
+    });
+
+    // Gabungkan cuti personal
+    const allLeave = leaveHistory.map((item) => ({
+      ...item.employee,
+      ...item.leave,
+      status: item.status,
+      leaveEmployeeId: item.id,
+      leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+    }));
+
+    return successResponseWithPage(
+      res,
+      'Successfully get all leave history',
+      allLeave,
+      200,
+      pagination.meta,
+    );
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to get leave history', null, 500);
   }
 }
 
@@ -598,4 +683,5 @@ module.exports = {
   createPersonalLeave,
   approvePersonalLeave,
   rejectPersonalLeave,
+  allLeaves,
 };
