@@ -5,9 +5,6 @@ const leaveController = require('../controllers/leave.controller');
 const roleMiddleware = require('../middleware/role.middleware');
 const validation = require('../validations/leave.validation');
 
-//  testing
-router.get('/history/:nik/testing', leaveController.getLeaveHistoryNik);
-
 //  api
 //menampilkan seluruh list mandatory leave
 router.get('/mandatory', roleMiddleware('User', 'Admin'), leaveController.mandatoryLeave);
@@ -17,7 +14,7 @@ router.get('/history/me', roleMiddleware('User', 'Admin'), leaveController.getLe
 router.get('/optional', roleMiddleware('User', 'Admin'), leaveController.optionalLeave);
 //untuk menolak optional leave
 router.patch(
-  '/optional/reject/:id',
+  '/optional/:id/reject',
   roleMiddleware('User', 'Admin'),
   leaveController.rejectOptionalLeave,
 );
@@ -45,5 +42,6 @@ router.patch(
 );
 // menonlak pengajuan cuti dari user
 router.patch('/personal/:id/reject', roleMiddleware('Admin'), leaveController.rejectPersonalLeave);
+router.get('/all', roleMiddleware('Admin'), leaveController.allLeaves);
 
 module.exports = router;
