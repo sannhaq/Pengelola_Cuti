@@ -24,7 +24,7 @@ const validate = function validateMiddleware(inputSchema) {
       }
     } catch (e) {
       console.log(e);
-      return errorResponse(res, 'Validation error', e.errors, 422);
+      return errorResponse(res, 'All required fields', e.errors, 422);
     }
     return next();
   };

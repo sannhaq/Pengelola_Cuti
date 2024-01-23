@@ -20,9 +20,13 @@ async function login(req, res) {
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
-    console.log(`Wrong password for user with email: ${email}`);
     return errorResponse(res, 'Wrong password', '', 401);
   }
+
+  const employee = await prisma.employee.findUnique({
+    where: { userId: user.id },
+    select: { nik: true },
+  });
 
   const expires = new Date(Date.now() + 1000 * 3600 * 24 * 30); // Expires in 30 days
   const refreshToken = await prisma.userToken.create({
@@ -46,9 +50,9 @@ async function login(req, res) {
     subject: user.id.toString(),
   });
 
-  const userData = { user, accessToken, encryptedRefreshToken };
+  const userData = { user, accessToken, encryptedRefreshToken, employee };
   delete userData.user.password;
-  return successResponse(res, 'Login success', { user, accessToken });
+  return successResponse(res, 'Login success', { user, accessToken, employee });
 }
 
 /**

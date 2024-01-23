@@ -244,8 +244,9 @@ async function optionalLeave(req, res) {
         id: true,
         employee: {
           select: {
+            nik: true,
             leaveEmployees: {
-              where: { leave: { typeOfLeaveId: 2 } },
+              where: { leave: { typeOfLeaveId: 2 }, status: 'APPROVE' },
               select: {
                 id: true,
                 status: true,
@@ -282,7 +283,8 @@ async function optionalLeave(req, res) {
     // Menggunakan Prisma untuk menghitung jumlah data yang memenuhi kondisi
     const totalLeaveCount = await prisma.leaveEmployee.count({
       where: {
-        employeeNik: userLeaveInfo.id.toString(),
+        employeeNik: userLeaveInfo.employee.nik,
+        status: 'APPROVE',
         leave: { typeOfLeaveId: 2 },
       },
     });
