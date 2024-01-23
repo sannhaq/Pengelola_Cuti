@@ -14,6 +14,17 @@ router.get('/:id', roleMiddleware('Super Admin', 'Admin'), positionController.ge
 router.post('/create', roleMiddleware('Super Admin', 'Admin'), positionController.createPosition);
 
 // PUT Update Positions
-router.put('/update/:id', roleMiddleware('Super Admin', 'Admin'), positionController.updatePosition)
+router.put(
+  '/update/:id',
+  roleMiddleware('Super Admin', 'Admin'),
+  positionController.updatePosition,
+);
+
+// DELETE Positions
+router.delete(
+  '/delete/:id',
+  roleMiddleware('Super Admin', 'Admin'),
+  positionController.deletePosition,
+);
 
 module.exports = router;
