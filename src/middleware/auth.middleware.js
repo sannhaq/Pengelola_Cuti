@@ -13,7 +13,7 @@ async function auth(req, res, next) {
     // Mendapatkan token akses dari header Authorization
     const authorizationHeader = req.header('Authorization');
     if (!authorizationHeader) {
-      return errorResponse(res, 'Authorization header is missing', '', 401);
+      return errorResponse(res, 'Authorization header is missing', '', 408);
     }
     const accessToken = authorizationHeader.split(' ')[1];
     // Mendekode token akses
@@ -30,7 +30,7 @@ async function auth(req, res, next) {
     return next();
   } catch (e) {
     console.log(e);
-    return errorResponse(res, 'Unauthenticated', '', 401);
+    return errorResponse(res, 'Unauthenticated', '', 408);
   }
 }
 

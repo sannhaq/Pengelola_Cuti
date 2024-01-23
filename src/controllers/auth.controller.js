@@ -69,7 +69,7 @@ async function refresh(req, res) {
   }
 
   if (Date.now() > refreshToken.expired_at.getTime()) {
-    return errorResponse(res, 'Refresh token expired', '', 401);
+    return errorResponse(res, 'Refresh token expired', '', 408);
   }
 
   await prisma.userToken.delete({ where: { id: refreshToken.id } });

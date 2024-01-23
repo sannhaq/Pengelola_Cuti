@@ -51,6 +51,14 @@ async function getLeaveHistoryNik(req, res) {
       return successResponse(res, 'No leave history found', [], 200, pagination.meta);
     }
 
+    // Total adalah jumlah keseluruhan data tanpa memperhatikan halaman saat ini
+    const total = await prisma.leaveEmployee.count({
+      where: { employeeNik: nik },
+    });
+
+    // Perhitungan lastPage berdasarkan total dan perPage
+    const lastPage = Math.ceil(total / perPage);
+
     // Gabungkan cuti individual ke dalam satu array
     const allLeaves = leaveHistory.map((item) => ({
       ...item.employee,
@@ -59,13 +67,11 @@ async function getLeaveHistoryNik(req, res) {
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
     }));
 
-    return successResponseWithPage(
-      res,
-      'Successfully retrieved leave history',
-      allLeaves,
-      200,
-      pagination.meta,
-    );
+    return successResponseWithPage(res, 'Successfully retrieved leave history', allLeaves, 200, {
+      ...pagination.meta,
+      total,
+      lastPage,
+    });
   } catch (error) {
     console.error('Error getting leave history:', error);
     return errorResponse(res, 'Failed to get leave history', '', 500);
@@ -78,9 +84,6 @@ async function getLeaveHistoryMe(req, res) {
     const userId = req.user.id;
     // Extract page and perPage from query parameters
     const { page, perPage } = req.query;
-
-    // Perform pagination using custom paginate function
-    const pagination = await paginate(prisma.user, { page, perPage });
 
     const userLeaveInfo = await prisma.user.findUnique({
       where: { id: userId },
@@ -113,6 +116,12 @@ async function getLeaveHistoryMe(req, res) {
       },
     });
 
+    // Menghitung total cuti yang dimiliki oleh pengguna
+    const totalLeaves = userLeaveInfo.employee.leaveEmployees.length;
+
+    // Perform pagination using custom paginate function, dengan menyertakan totalLeaves
+    const pagination = await paginate(prisma.user, { page, perPage, total: totalLeaves });
+
     // Gunakan skip dan take di sini berdasarkan data paginasi
     const paginatedLeaves = userLeaveInfo.employee.leaveEmployees.slice(
       (pagination.meta.currPage - 1) * pagination.meta.perPage,
@@ -135,6 +144,12 @@ async function getLeaveHistoryMe(req, res) {
         leaves: allLeaves,
       },
     };
+
+    // Mengupdate total pada objek pagination.meta
+    pagination.meta.total = totalLeaves;
+
+    // Menghitung lastPage berdasarkan total data dan perPage
+    pagination.meta.lastPage = Math.ceil(totalLeaves / pagination.meta.perPage);
 
     return successResponseWithPage(
       res,
@@ -189,12 +204,20 @@ async function mandatoryLeave(req, res) {
       leaveUse: calculateLeaveAmount(leave.startLeave, leave.endLeave),
     }));
 
+    // Menggunakan Prisma untuk menghitung jumlah total
+    const totalLeaves = await prisma.leave.count({
+      where: { typeOfLeaveId: 1 }, // Ganti 1 dengan ID yang sesuai untuk jenis cuti wajib
+    });
+
+    // Menghitung jumlah halaman terakhir
+    const lastPage = Math.ceil(totalLeaves / pagination.meta.perPage);
+
     return successResponseWithPage(
       res,
       'Successfully retrieved mandatory leave',
       formattedLeaves,
       200,
-      pagination.meta,
+      { ...pagination.meta, total: totalLeaves, lastPage },
     );
   } catch (e) {
     console.log(e);
@@ -214,6 +237,7 @@ async function optionalLeave(req, res) {
     const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
     // Menggunakan Prisma untuk mengambil informasi cuti yang diajukan
     const userId = req.user.id;
+
     const userLeaveInfo = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -255,6 +279,17 @@ async function optionalLeave(req, res) {
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
     }));
 
+    // Menggunakan Prisma untuk menghitung jumlah data yang memenuhi kondisi
+    const totalLeaveCount = await prisma.leaveEmployee.count({
+      where: {
+        employeeNik: userLeaveInfo.id.toString(),
+        leave: { typeOfLeaveId: 2 },
+      },
+    });
+
+    // Menghitung jumlah halaman terakhir
+    const lastPage = Math.ceil(totalLeaveCount / pagination.meta.perPage);
+
     // Membuat objek sanitizedUser dengan menggabungkan beberapa properti dari objek leave
     const sanitizedUser = {
       id: userLeaveInfo.id,
@@ -269,7 +304,7 @@ async function optionalLeave(req, res) {
       'Successfully retrieved leave history',
       sanitizedUser,
       200,
-      pagination.meta,
+      { ...pagination.meta, total: totalLeaveCount, lastPage },
     );
   } catch (e) {
     console.log(e);
@@ -285,9 +320,15 @@ async function collectiveLeave(req, res) {
   try {
     const { typeOfLeaveId, reason, startLeave, endLeave } = req.body;
 
+    // Periksa apakah endLeave lebih besar dari startLeave
+    if (new Date(endLeave) <= new Date(startLeave)) {
+      return errorResponse(res, 'End date should be greater than start date', null, 400);
+    }
+
     // Temukan karyawan yang memenuhi kriteria
     const eligibleEmployee = await prisma.employee.findMany({
       where: {
+        isWorking: true,
         user: {
           role: {
             id: {
@@ -429,6 +470,10 @@ async function createPersonalLeave(req, res) {
     const { reason, startLeave, endLeave } = req.body;
     const { nik } = req.params;
 
+    // Periksa apakah endLeave lebih besar dari startLeave
+    if (new Date(endLeave) <= new Date(startLeave)) {
+      return errorResponse(res, 'End date should be greater than start date', null, 400);
+    }
     // Simpan data cuti
     const leaveData = await prisma.leave.create({
       data: {
