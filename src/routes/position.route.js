@@ -20,4 +20,11 @@ router.put(
   positionController.updatePosition,
 );
 
+// DELETE Positions
+router.delete(
+  '/delete/:id',
+  roleMiddleware('Super Admin', 'Admin'),
+  positionController.deletePosition,
+);
+
 module.exports = router;
