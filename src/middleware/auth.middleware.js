@@ -10,15 +10,15 @@ const { errorResponse } = require('../utils/helper.util');
  */
 async function auth(req, res, next) {
   try {
-    // Mendapatkan token akses dari header Authorization
+    // Gets the access token from the Authorization header
     const authorizationHeader = req.header('Authorization');
     if (!authorizationHeader) {
       return errorResponse(res, 'Authorization header is missing', '', 408);
     }
     const accessToken = authorizationHeader.split(' ')[1];
-    // Mendekode token akses
+    // Decoding access tokens
     const decode = jwt.verify(accessToken, config.secret);
-    // Menyelidiki pengguna berdasarkan ID yang ada dalam token
+    // Investigate users based on the ID contained in the token
     req.user = await prisma.user.findUniqueOrThrow({
       where: {
         id: parseInt(decode.sub, 10),

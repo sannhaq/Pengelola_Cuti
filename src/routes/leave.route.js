@@ -6,42 +6,43 @@ const roleMiddleware = require('../middleware/role.middleware');
 const validation = require('../validations/leave.validation');
 
 //  api
-//menampilkan seluruh list mandatory leave
+// GET ALL Mandatory Leave
 router.get('/mandatory', roleMiddleware('User', 'Admin'), leaveController.mandatoryLeave);
-//meanmpilkan seluruh history cuti user yang sedang login
+// GET ALL Leave history by user login
 router.get('/history/me', roleMiddleware('User', 'Admin'), leaveController.getLeaveHistoryMe);
-//meanmpilkan seluruh list optional leave
+// GET ALL Optional Leave
 router.get('/optional', roleMiddleware('User', 'Admin'), leaveController.optionalLeave);
-//untuk menolak optional leave
+// PATCH reject optional leave
 router.patch(
   '/optional/:id/reject',
   roleMiddleware('User', 'Admin'),
   leaveController.rejectOptionalLeave,
 );
-//menampilkan salah satu history leave user
+// GET leave history based on nik
 router.get('/history/:nik', roleMiddleware('Admin'), leaveController.getLeaveHistoryNik);
-// menambahkan untuk cuti optional dan mandatory
+// POST optional and mandatory leave
 router.post(
   '/collective',
   roleMiddleware('Admin'),
   validation.collectiveLeaveValidation,
   leaveController.collectiveLeave,
 );
-// menambahkan untuk cuti personal
+// POST personal leave
 router.post(
   '/personal/:nik',
   roleMiddleware('Admin'),
   validation.personalLeaveValidation,
   leaveController.createPersonalLeave,
 );
-// menerima pengajuan cuti dari user
+// PATCH accept leave applications from users
 router.patch(
   '/personal/:id/approve',
   roleMiddleware('Admin'),
   leaveController.approvePersonalLeave,
 );
-// menonlak pengajuan cuti dari user
+// PATCH reject the user's leave application
 router.patch('/personal/:id/reject', roleMiddleware('Admin'), leaveController.rejectPersonalLeave);
+// GET All leave
 router.get('/all', roleMiddleware('Admin'), leaveController.allLeaves);
 
 module.exports = router;

@@ -13,21 +13,29 @@ const config = require('../configs/general.config');
 async function login(req, res) {
   const { email, password } = req.body;
 
+  // Check if the user exists
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    return errorResponse(res, 'Email not found', '', 404);
+    return errorResponse(res, 'Email not found', null, 404);
   }
 
+  // Compare the provided password with the stored password hash
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
-    return errorResponse(res, 'Wrong password', '', 401);
+    return errorResponse(res, 'Wrong password', null, 401);
   }
 
+  // Check if the user is an active employee
   const employee = await prisma.employee.findUnique({
     where: { userId: user.id },
-    select: { nik: true },
+    select: { nik: true, isWorking: true },
   });
 
+  if (!employee || !employee.isWorking) {
+    return errorResponse(res, 'You are no longer an employee', null, 401);
+  }
+
+  // Generate refresh token and set it as a cookie
   const expires = new Date(Date.now() + 1000 * 3600 * 24 * 30); // Expires in 30 days
   const refreshToken = await prisma.userToken.create({
     data: {
@@ -45,6 +53,7 @@ async function login(req, res) {
     expires,
   });
 
+  // Generate access token
   const accessToken = jwt.sign({}, config.secret, {
     expiresIn: '15m',
     subject: user.id.toString(),
@@ -63,21 +72,25 @@ async function refresh(req, res) {
   let refreshToken;
 
   try {
+    // Decrypt the refresh token from the cookie
     refreshToken = decrypt(req.cookies.refresh_token);
+    // Find the corresponding user token from the database
     refreshToken = await prisma.userToken.findUniqueOrThrow({
       where: { refreshToken },
     });
   } catch (e) {
-    console.log(e);
     return errorResponse(res, 'Invalid refresh token');
   }
 
+  // Check if the refresh token has expired
   if (Date.now() > refreshToken.expired_at.getTime()) {
     return errorResponse(res, 'Refresh token expired', '', 408);
   }
 
+  // Delete the used refresh token
   await prisma.userToken.delete({ where: { id: refreshToken.id } });
 
+  // Generate a new refresh token and store it in the database
   const expires = new Date(Date.now() + 1000 * 3600 * 24 * 30); // Expires in 30 days
   const newRefreshToken = await prisma.userToken.create({
     data: {
@@ -87,6 +100,7 @@ async function refresh(req, res) {
     },
   });
 
+  // Set the new refresh token as a cookie
   res.cookie('refresh_token', encrypt(newRefreshToken.refreshToken), {
     httpOnly: true,
     secure: true,
@@ -94,6 +108,7 @@ async function refresh(req, res) {
     expires,
   });
 
+  // Generate a new access token
   const accessToken = jwt.sign({}, config.secret, {
     expiresIn: '15m',
     subject: newRefreshToken.userId.toString(),
@@ -108,12 +123,14 @@ async function refresh(req, res) {
  */
 async function logout(req, res) {
   try {
+    // Decrypt the refresh token from the cookie
     const refreshToken = decrypt(req.cookies.refresh_token);
+    // Delete the user token associated with the refresh token
     await prisma.userToken.delete({ where: { refreshToken } });
   } catch {
     return errorResponse(res, 'Invalid refresh token');
   }
-
+  // Clear the refresh token cookie on the client side
   res.clearCookie('refresh_token');
   return successResponse(res, 'Logout success');
 }

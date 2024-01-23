@@ -12,14 +12,16 @@ const { meta } = require('eslint-plugin-prettier');
 
 async function getLeaveHistoryNik(req, res) {
   try {
+    // Extract NIK from request parameters
     const { nik } = req.params;
 
-    // Extract page and perPage from query parameters
+    // Extract page and perPage from query parameters for pagination
     const { page, perPage } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
 
+    // Retrieve leave history for the specified employeeNik
     const leaveHistory = await prisma.leaveEmployee.findMany({
       where: { employeeNik: nik },
       include: {
@@ -47,23 +49,24 @@ async function getLeaveHistoryNik(req, res) {
       take: pagination.meta.perPage,
     });
 
+    // Check if leave history is empty
     if (!leaveHistory || leaveHistory.length === 0) {
       return successResponse(res, 'No leave history found', [], 200, pagination.meta);
     }
 
-    // Total adalah jumlah keseluruhan data tanpa memperhatikan halaman saat ini
+    // Count total leave records for the specified employeeNik
     const total = await prisma.leaveEmployee.count({
       where: { employeeNik: nik },
     });
 
-    // Perhitungan lastPage berdasarkan total dan perPage
+    // Calculate the last page based on total and perPage
     const lastPage = Math.ceil(total / perPage);
 
-    // Gabungkan cuti individual ke dalam satu array
+    // Transform the leave history data for response
     const allLeaves = leaveHistory.map((item) => ({
       ...item.employee,
       ...item.leave,
-      status: item.status, // Tambahkan status jika diperlukan
+      status: item.status,
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
     }));
 
@@ -80,11 +83,11 @@ async function getLeaveHistoryNik(req, res) {
 
 async function getLeaveHistoryMe(req, res) {
   try {
-    // Menggunakan Prisma untuk mengambil informasi cuti yang diajukan
+    // Extract user ID from the authenticated user
     const userId = req.user.id;
-    // Extract page and perPage from query parameters
+    // Extract page and perPage from query parameters for pagination
     const { page, perPage } = req.query;
-
+    // Retrieve user-specific leave information using Prisma
     const userLeaveInfo = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -116,19 +119,19 @@ async function getLeaveHistoryMe(req, res) {
       },
     });
 
-    // Menghitung total cuti yang dimiliki oleh pengguna
+    // Count total leaves for the user
     const totalLeaves = userLeaveInfo.employee.leaveEmployees.length;
 
-    // Perform pagination using custom paginate function, dengan menyertakan totalLeaves
+    // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.user, { page, perPage, total: totalLeaves });
 
-    // Gunakan skip dan take di sini berdasarkan data paginasi
+    // Slice leaves based on current page and perPage
     const paginatedLeaves = userLeaveInfo.employee.leaveEmployees.slice(
       (pagination.meta.currPage - 1) * pagination.meta.perPage,
       pagination.meta.currPage * pagination.meta.perPage,
     );
 
-    // Gabungkan cuti individual dan cuti kolektif ke dalam satu array
+    // Transform leave data for response
     const allLeaves = paginatedLeaves.map((item) => ({
       ...item.leave,
       leaveEmployeeId: item.id,
@@ -136,19 +139,16 @@ async function getLeaveHistoryMe(req, res) {
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
     }));
 
-    // Membuat objek sanitizedUser dengan menggabungkan beberapa properti dari objek leave
+    // Create a sanitized user object
     const sanitizedUser = {
       id: userLeaveInfo.id,
       employee: {
-        // Menyalin properti employee dari objek leave
         leaves: allLeaves,
       },
     };
 
-    // Mengupdate total pada objek pagination.meta
+    // Update total and lastPage in the pagination meta
     pagination.meta.total = totalLeaves;
-
-    // Menghitung lastPage berdasarkan total data dan perPage
     pagination.meta.lastPage = Math.ceil(totalLeaves / pagination.meta.perPage);
 
     return successResponseWithPage(
@@ -166,13 +166,13 @@ async function getLeaveHistoryMe(req, res) {
 
 async function mandatoryLeave(req, res) {
   try {
-    // Extract page and perPage from query parameters
+    // Extract page and perPage from query parameters for pagination
     const { page, perPage } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
 
-    // Menggunakan Prisma untuk mengambil informasi tentang jenis dengan pagination
+    // Retrieve mandatory leave information using Prisma
     const mandatory = await prisma.typeOfLeave.findUnique({
       where: { id: 1 },
       select: {
@@ -190,13 +190,13 @@ async function mandatoryLeave(req, res) {
       },
     });
 
-    // Fungsi untuk memformat tanggal ke dalam "yyyy-mm-dd"
+    // Function to format date to ISO format
     function formatDate(date) {
       const formattedDate = new Date(date).toISOString().split('T')[0];
       return formattedDate;
     }
 
-    // Memformat tanggal untuk setiap entri di leaves
+    // Format leave data for response
     const formattedLeaves = mandatory?.leaves.map((leave) => ({
       ...leave,
       startLeave: formatDate(leave.startLeave),
@@ -204,12 +204,12 @@ async function mandatoryLeave(req, res) {
       leaveUse: calculateLeaveAmount(leave.startLeave, leave.endLeave),
     }));
 
-    // Menggunakan Prisma untuk menghitung jumlah total
+    // Count total mandatory leaves using Prisma
     const totalLeaves = await prisma.leave.count({
-      where: { typeOfLeaveId: 1 }, // Ganti 1 dengan ID yang sesuai untuk jenis cuti wajib
+      where: { typeOfLeaveId: 1 },
     });
 
-    // Menghitung jumlah halaman terakhir
+    // Calculate lastPage for pagination
     const lastPage = Math.ceil(totalLeaves / pagination.meta.perPage);
 
     return successResponseWithPage(
@@ -231,13 +231,16 @@ async function mandatoryLeave(req, res) {
  */
 async function optionalLeave(req, res) {
   try {
-    // Extract page and perPage from query parameters
+    // Extract page and perPage from query parameters for pagination
     const { page, perPage } = req.query;
+
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
-    // Menggunakan Prisma untuk mengambil informasi cuti yang diajukan
+
+    // Get authenticated user's ID
     const userId = req.user.id;
 
+    // Retrieve user's optional leave information using Prisma
     const userLeaveInfo = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -272,7 +275,7 @@ async function optionalLeave(req, res) {
       },
     });
 
-    // Gabungkan cuti individual dan cuti kolektif ke dalam satu array
+    // Format the retrieved leaves for response
     const allLeaves = userLeaveInfo.employee.leaveEmployees.map((item) => ({
       ...item.leave,
       leaveEmployeeId: item.id,
@@ -280,7 +283,7 @@ async function optionalLeave(req, res) {
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
     }));
 
-    // Menggunakan Prisma untuk menghitung jumlah data yang memenuhi kondisi
+    // Count total approved optional leaves using Prisma
     const totalLeaveCount = await prisma.leaveEmployee.count({
       where: {
         employeeNik: userLeaveInfo.employee.nik,
@@ -289,14 +292,13 @@ async function optionalLeave(req, res) {
       },
     });
 
-    // Menghitung jumlah halaman terakhir
+    // Calculate lastPage for pagination
     const lastPage = Math.ceil(totalLeaveCount / pagination.meta.perPage);
 
-    // Membuat objek sanitizedUser dengan menggabungkan beberapa properti dari objek leave
+    // Create a sanitized user object for response
     const sanitizedUser = {
       id: userLeaveInfo.id,
       employee: {
-        // Menyalin properti employee dari objek leave
         leaves: allLeaves,
       },
     };
@@ -320,32 +322,34 @@ async function optionalLeave(req, res) {
  */
 async function collectiveLeave(req, res) {
   try {
+    // Extract necessary data from the request body
     const { typeOfLeaveId, reason, startLeave, endLeave } = req.body;
 
-    // Periksa apakah endLeave lebih besar dari startLeave
+    // Validate that the end date is greater than the start date
     if (new Date(endLeave) <= new Date(startLeave)) {
       return errorResponse(res, 'End date should be greater than start date', null, 400);
     }
 
-    // Temukan karyawan yang memenuhi kriteria
+    // Retrieve eligible employees for collective leave
     const eligibleEmployee = await prisma.employee.findMany({
       where: {
         isWorking: true,
         user: {
           role: {
             id: {
-              in: [2, 3],
+              in: [2, 3], // Specify role IDs that are eligible for collective leave
             },
           },
         },
       },
     });
 
+    // Check if there are eligible employees
     if (!eligibleEmployee || eligibleEmployee.length === 0) {
       return errorResponse(res, 'There are no employees that meet the criteria', null, 404);
     }
 
-    // Simpan data cuti
+    // Create a new leave record in the database
     const leaveData = await prisma.leave.create({
       data: {
         typeOfLeaveId,
@@ -355,22 +359,22 @@ async function collectiveLeave(req, res) {
       },
     });
 
-    // Dapatkan ID cuti yang baru saja dibuat
+    // Retrieve the ID of the created leave
     const leaveId = leaveData.id;
 
-    // Simpan data collectiveLeave dengan menghubungkan ke ID cuti
+    // Create leave records for eligible employees
     await prisma.leaveEmployee.createMany({
       data: eligibleEmployee.map((emp) => ({
         leaveId,
         employeeNik: emp.nik.toString(),
-        status: 'APPROVE',
+        status: 'APPROVE', // Set initial status as 'APPROVE'
       })),
     });
 
-    // Hitung jumlah hari cuti antara startLeave dan endLeave
+    // Calculate the number of leave days
     const numberOfLeaveDays = calculateLeaveAmount(startLeave, endLeave);
 
-    // Kurangkan amountOfLeave pada karyawan yang terkait
+    // Decrement the amountOfLeave for eligible employees
     await prisma.employee.updateMany({
       where: {
         nik: {
@@ -397,10 +401,11 @@ async function collectiveLeave(req, res) {
  */
 async function rejectOptionalLeave(req, res) {
   try {
+    // Extract necessary data from the request parameters and user information
     const { id } = req.params;
     const userId = req.user.id;
 
-    // Dapatkan nik dari employee yang sedang login
+    // Retrieve the employeeNik of the requesting user
     const employeeNik = await prisma.user
       .findUnique({
         where: { id: userId },
@@ -408,34 +413,33 @@ async function rejectOptionalLeave(req, res) {
       })
       .then((user) => user.employee?.nik);
 
-    // Periksa apakah employeeNik dari user yang login sama dengan employeeNik di leaveEmployee
+    // Check if the user is authorized to reject the leave
     const isAuthorized = await prisma.leaveEmployee.findUnique({
       where: { id: parseInt(id) },
       select: { employeeNik: true, leaveId: true },
     });
 
-    // Jika tidak diizinkan
     if (!isAuthorized || isAuthorized.employeeNik !== employeeNik) {
       return errorResponse(res, 'Forbidden', null, 403);
     }
 
-    // Dapatkan informasi cuti (startLeave dan endLeave) dari tabel Leave berdasarkan leaveId
+    // Retrieve leave information based on leaveId
     const leaveInfo = await prisma.leave.findUnique({
       where: { id: isAuthorized.leaveId },
       select: { startLeave: true, endLeave: true },
     });
 
-    // Dapatkan informasi cuti yang diperbarui setelah di-REJECT
+    // Check if the leave status is already 'REJECT'
     const rejectStatus = await prisma.leaveEmployee.findUnique({
       where: { id: parseInt(id) },
       select: { status: true },
     });
-    // Periksa status apakah sudah 'REJECT'
+
     if (rejectStatus.status === 'REJECT') {
       return errorResponse(res, 'Leave status is already REJECT', null, 400);
     }
 
-    // Dapatkan informasi cuti yang diperbarui setelah di-REJECT
+    // Update the leave status to 'REJECT'
     const updatedLeave = await prisma.leaveEmployee.update({
       where: { id: parseInt(id) },
       data: {
@@ -443,10 +447,9 @@ async function rejectOptionalLeave(req, res) {
       },
     });
 
-    // Hitung jumlah cuti
+    // Calculate leave amount and increment amountOfLeave for the employee
     const leaveAmount = calculateLeaveAmount(leaveInfo.startLeave, leaveInfo.endLeave);
 
-    // Menambahkan amountOfLeave pada karyawan terkait
     await prisma.employee.update({
       where: { nik: employeeNik },
       data: {
@@ -469,27 +472,29 @@ async function rejectOptionalLeave(req, res) {
  */
 async function createPersonalLeave(req, res) {
   try {
+    // Extract necessary data from the request body and parameters
     const { reason, startLeave, endLeave } = req.body;
     const { nik } = req.params;
 
-    // Periksa apakah endLeave lebih besar dari startLeave
+    // Validate that end date is greater than start date
     if (new Date(endLeave) <= new Date(startLeave)) {
       return errorResponse(res, 'End date should be greater than start date', null, 400);
     }
-    // Simpan data cuti
+
+    // Create a new personal leave entry in the database
     const leaveData = await prisma.leave.create({
       data: {
-        typeOfLeaveId: 3,
+        typeOfLeaveId: 3, // Assuming typeOfLeaveId for personal leave is 3, update accordingly
         reason,
         startLeave,
         endLeave,
       },
     });
 
-    // Dapatkan ID cuti yang baru saja dibuat
+    // Retrieve the generated leaveId
     const leaveId = leaveData.id;
 
-    //Simpan data dengan menghubungkan ke ID cuti
+    // Create a leaveEmployee entry linking the leave to the specified employee (identified by nik)
     await prisma.leaveEmployee.create({
       data: {
         leaveId: leaveId,
@@ -510,9 +515,10 @@ async function createPersonalLeave(req, res) {
  */
 async function approvePersonalLeave(req, res) {
   try {
+    // Extract the leaveEmployee ID from the request parameters
     const { id } = req.params;
 
-    // Dapatkan informasi leaveEmployee berdasarkan ID
+    // Retrieve relevant information about the leaveEmployee and associated leave
     const leaveEmployeeInfo = await prisma.leaveEmployee.findUnique({
       where: {
         id: parseInt(id),
@@ -530,15 +536,17 @@ async function approvePersonalLeave(req, res) {
       },
     });
 
-    // Cek apakah typeOfLeaveId di tabel leave adalah 3(personal)
+    // Validate the typeOfLeaveId for personal leave
     if (leaveEmployeeInfo.leave.typeOfLeaveId !== 3) {
       return errorResponse(res, 'Invalid typeOfLeaveId for personal leave', null, 400);
     }
-    // Cek apakah status sudah APPROVE
+
+    // Check if the leave status is already APPROVE
     if (leaveEmployeeInfo.status === 'APPROVE') {
       return errorResponse(res, 'Leave status is already APPROVE', null, 400);
     }
 
+    // Update the leaveEmployee status to APPROVE
     const updateStatus = await prisma.leaveEmployee.update({
       where: { id: parseInt(id) },
       data: {
@@ -546,13 +554,12 @@ async function approvePersonalLeave(req, res) {
       },
     });
 
-    // Hitung jumlah cuti yang digunakan
+    // Calculate the leave usage and decrement the employee's amountOfLeave
     const leaveUse = calculateLeaveAmount(
       leaveEmployeeInfo.leave.startLeave,
       leaveEmployeeInfo.leave.endLeave,
     );
 
-    // megurangi amountOfLeave pada karyawan terkait
     await prisma.employee.update({
       where: { nik: leaveEmployeeInfo.employeeNik },
       data: {
@@ -575,9 +582,10 @@ async function approvePersonalLeave(req, res) {
  */
 async function rejectPersonalLeave(req, res) {
   try {
+    // Extract the leaveEmployee ID from the request parameters
     const { id } = req.params;
 
-    //Dapatkan informasi leaveEmployee berdasarkan ID
+    // Retrieve relevant information about the leaveEmployee and associated leave
     const leaveEmployeeInfo = await prisma.leaveEmployee.findUnique({
       where: {
         id: parseInt(id),
@@ -594,30 +602,32 @@ async function rejectPersonalLeave(req, res) {
         },
       },
     });
-    //cek apakah typeOfLeave di rabel leave adalah 3 (personal)
+
+    // Validate the typeOfLeaveId for personal leave
     if (leaveEmployeeInfo.leave.typeOfLeaveId !== 3) {
       return errorResponse(res, 'Invalid typeOfLeaveId for personal leave', null, 400);
     }
 
-    //cek apakah status sudah REJECT
+    // Check if the leave status is already REJECTED
     if (leaveEmployeeInfo.status === 'REJECT') {
       return errorResponse(res, 'Leave status is already REJECTED', null, 400);
     }
 
-    //hitung jumlah cuti yang digunakan
+    // Calculate the leave usage
     const leaveUse = calculateLeaveAmount(
       leaveEmployeeInfo.leave.startLeave,
       leaveEmployeeInfo.leave.endLeave,
     );
 
-    //update status menjadi reject
+    // Update the leaveEmployee status to REJECT
     const updateStatus = await prisma.leaveEmployee.update({
       where: { id: parseInt(id) },
       data: {
         status: 'REJECT',
       },
     });
-    //menambahkan kembali amount of leave jika status leave sudah approve
+
+    // If the previous status was APPROVE, increment employee's amountOfLeave
     if (leaveEmployeeInfo.status === 'APPROVE') {
       await prisma.employee.update({
         where: { nik: leaveEmployeeInfo.employeeNik },
@@ -637,12 +647,13 @@ async function rejectPersonalLeave(req, res) {
 
 async function allLeaves(req, res) {
   try {
-    // Extract page and perPage from query parameters
+    // Extract query parameters from the request
     const { page, perPage, search, status } = req.query;
-    // Perform pagination using custom paginate function
+
+    // Perform pagination using the paginate utility function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
 
-    //objek filter untuk search
+    // Define the filter object based on optional search and status parameters
     const filter = {};
     if (search) {
       filter.OR = [
@@ -662,7 +673,6 @@ async function allLeaves(req, res) {
       ];
     }
 
-    //objek filter status
     if (status) {
       if (typeof status === 'string') {
         filter.status = status.toUpperCase();
@@ -671,6 +681,7 @@ async function allLeaves(req, res) {
       }
     }
 
+    // Retrieve leave history based on the applied filters
     const leaveHistory = await prisma.leaveEmployee.findMany({
       where: filter,
       include: {
@@ -698,7 +709,7 @@ async function allLeaves(req, res) {
       take: pagination.meta.perPage,
     });
 
-    // Gabungkan cuti personal
+    // Format the result to include leaveEmployeeId and leaveUse
     const allLeave = leaveHistory.map((item) => ({
       ...item.employee,
       ...item.leave,

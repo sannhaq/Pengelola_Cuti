@@ -12,11 +12,14 @@ const validate = function validateMiddleware(inputSchema) {
    */
   return async (req, res, next) => {
     let schema = inputSchema;
+
+    // If schema is a function, call it to get the schema
     if (typeof schema === 'function') {
       schema = schema(req.params.id);
     }
 
     try {
+      // Parse request data against the schema based on the HTTP method
       if (req.method === 'GET') {
         req.query = await z.object(schema).strict().parseAsync(req.query);
       } else {
@@ -26,6 +29,8 @@ const validate = function validateMiddleware(inputSchema) {
       console.log(e);
       return errorResponse(res, 'All required fields', e.errors, 422);
     }
+
+    // Continue to the next middleware or route if validation is successful
     return next();
   };
 };
