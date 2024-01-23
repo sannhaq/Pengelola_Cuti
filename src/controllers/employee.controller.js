@@ -20,7 +20,7 @@ const {
 async function getAll(req, res) {
   try {
     // Extract page, perPage, search, and orderBy from query parameters
-    const { page, perPage, search, orderBy } = req.query;
+    const { page, perPage, search, orderBy, isWorking } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.employee, { page, perPage });
@@ -58,8 +58,19 @@ async function getAll(req, res) {
 
     // Add orderBy condition based on the orderBy parameter
     if (orderBy) {
-      const [field, order] = orderBy.split('_'); // Split the orderBy parameter into field and order
+      const [field, order] = orderBy.split('_');
       baseQuery = { ...baseQuery, orderBy: { [field]: order } };
+    }
+
+    // Add isWorking condition based on the isWorking parameter
+    if (isWorking !== undefined) {
+      baseQuery = {
+        ...baseQuery,
+        where: {
+          ...baseQuery.where,
+          isWorking: isWorking.toLowerCase() === 'true',
+        },
+      };
     }
 
     // Fetch employees with selected fields and positions' names based on search conditions and orderBy
@@ -89,7 +100,6 @@ async function getAll(req, res) {
     return errorResponse(res, 'Failed to get employees', '', 500);
   }
 }
-
 
 async function getNIK(req, res) {
   try {
