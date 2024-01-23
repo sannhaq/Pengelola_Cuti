@@ -20,7 +20,7 @@ const {
 async function getAll(req, res) {
   try {
     // Extract page, perPage, search, and orderBy from query parameters
-    const { page, perPage, search, orderBy } = req.query;
+    const { page, perPage, search, orderBy, isWorking } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.employee, { page, perPage });
@@ -58,8 +58,19 @@ async function getAll(req, res) {
 
     // Add orderBy condition based on the orderBy parameter
     if (orderBy) {
-      const [field, order] = orderBy.split('_'); // Split the orderBy parameter into field and order
+      const [field, order] = orderBy.split('_');
       baseQuery = { ...baseQuery, orderBy: { [field]: order } };
+    }
+
+    // Add isWorking condition based on the isWorking parameter
+    if (isWorking !== undefined) {
+      baseQuery = {
+        ...baseQuery,
+        where: {
+          ...baseQuery.where,
+          isWorking: isWorking.toLowerCase() === 'true',
+        },
+      };
     }
 
     // Fetch employees with selected fields and positions' names based on search conditions and orderBy
@@ -89,7 +100,6 @@ async function getAll(req, res) {
     return errorResponse(res, 'Failed to get employees', '', 500);
   }
 }
-
 
 async function getNIK(req, res) {
   try {
@@ -122,9 +132,9 @@ async function getNIK(req, res) {
             email: true,
             role: {
               select: {
-                name: true
-              }
-            }
+                name: true,
+              },
+            },
           },
         },
         historicalName: true,
@@ -266,7 +276,7 @@ async function getMe(req, res) {
 
 async function updateEmployee(req, res) {
   const employeeNik = req.params.nik;
-  const { name, positionId, typeOfEmployee, roleId  } = req.body;
+  const { name, positionId, typeOfEmployee, roleId } = req.body;
 
   try {
     // Fetch the existing employee data from the database using Prisma
@@ -279,7 +289,7 @@ async function updateEmployee(req, res) {
         typeOfEmployee: true,
         user: {
           select: {
-            role: true
+            role: true,
           },
         },
       },
@@ -335,7 +345,7 @@ async function updateEmployee(req, res) {
           name,
         },
       });
-    } 
+    }
 
     return successResponse(res, 'Employee updated successfully', employee, 200);
   } catch (error) {
@@ -387,7 +397,7 @@ async function resetPassword(req, res) {
         nik,
       },
       include: {
-        user: true
+        user: true,
       },
     });
 
@@ -445,10 +455,10 @@ async function resetPassword(req, res) {
   }
 }
 
-
 // Fungsi untuk menambahkan employee baru
 async function addEmployee(req, res) {
-  const { nik, name, email, isContract, startContract, endContract, positionId, newContract } = req.body;
+  const { nik, name, email, isContract, startContract, endContract, positionId, newContract } =
+    req.body;
   const { user } = req;
 
   try {
@@ -491,13 +501,13 @@ async function addEmployee(req, res) {
         // Tambahkan amountOfLeave setelah 3 bulan bekerja
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
         if (monthsOfWork >= 3) {
-          amountOfLeave = Math.max(monthsOfWork - 2, 0);;
+          amountOfLeave = Math.max(monthsOfWork - 2, 0);
           // Tambahkan amountOfLeave setiap bulan
           const startContractDate = moment.utc(startContract).toDate();
           const rule = new schedule.RecurrenceRule();
           rule.date = startContractDate.getDate();
           rule.month = new schedule.Range(0, 11);
-    
+
           schedule.scheduleJob(rule, async () => {
             await prisma.employee.update({
               where: {
@@ -524,7 +534,7 @@ async function addEmployee(req, res) {
         const rule = new schedule.RecurrenceRule();
         rule.date = startContractDate.getDate();
         rule.month = new schedule.Range(0, 11);
-    
+
         schedule.scheduleJob(rule, async () => {
           await prisma.employee.update({
             where: {
