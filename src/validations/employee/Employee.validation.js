@@ -23,10 +23,10 @@ const editEmployeeInputScheme = z.object({
     })
 });
 
-const addEmmployeeInputValidation = validate(addEmployeeInputScheme)
-const editEmmployeeInputValidation = validate(editEmployeeInputScheme)
+const addEmmployeeInputValidation = validate(addEmployeeInputScheme);
+const editEmmployeeInputValidation = validate(editEmployeeInputScheme);
 
-module.exports = { 
-    addEmmployeeInputValidation,
-    editEmmployeeInputValidation
- }
+module.exports = {
+  addEmmployeeInputValidation,
+  editEmmployeeInputValidation,
+};
