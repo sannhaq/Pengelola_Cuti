@@ -147,5 +147,5 @@ module.exports = {
   formatDateObjectToDDMMYYYY,
   formatEmployeeData,
   formatLeaveHistoryData,
-  validate
+  validate,
 };
