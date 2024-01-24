@@ -17,11 +17,12 @@ enum Status {
 }
 
 model Role {
-  id         Int      @id @default(autoincrement())
+  id         Int        @id @default(autoincrement())
   name       String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
   users      User[]
+  rolePages  RolePage[]
 }
 
 model User {
@@ -53,21 +54,21 @@ model Positions {
 }
 
 model Employee {
-  nik              String            @id
+  nik              String          @id
   name             String
   isWorking        Boolean
-  positions        Positions         @relation(fields: [positionId], references: [id])
+  positions        Positions       @relation(fields: [positionId], references: [id])
   positionId       Int
   historicalName   String
   historicalNik    String
   amountOfLeave    Int
-  user             User              @relation(fields: [userId], references: [id])
-  userId           Int               @unique
-  typeOfEmployee   TypeOfEmployee    @relation(fields: [typeOfEmployeeId], references: [id])
+  user             User            @relation(fields: [userId], references: [id])
+  userId           Int             @unique
+  typeOfEmployee   TypeOfEmployee  @relation(fields: [typeOfEmployeeId], references: [id])
   typeOfEmployeeId Int
-  created_at       DateTime          @default(now())
-  updated_at       DateTime          @updatedAt
-  leaveEmployees LeaveEmployee[]
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
+  leaveEmployees   LeaveEmployee[]
 }
 
 model TypeOfLeave {
@@ -79,12 +80,12 @@ model TypeOfLeave {
 }
 
 model Leave {
-  id               Int               @id @default(autoincrement())
-  typeOfLeave      TypeOfLeave       @relation(fields: [typeOfLeaveId], references: [id])
-  typeOfLeaveId    Int
-  startLeave       DateTime          @db.Date
-  endLeave         DateTime          @db.Date
-  reason           String
+  id             Int             @id @default(autoincrement())
+  typeOfLeave    TypeOfLeave     @relation(fields: [typeOfLeaveId], references: [id])
+  typeOfLeaveId  Int
+  startLeave     DateTime        @db.Date
+  endLeave       DateTime        @db.Date
+  reason         String
   leaveEmployees LeaveEmployee[]
 }
 
@@ -97,10 +98,25 @@ model UserToken {
 }
 
 model LeaveEmployee {
-  id               Int      @id @default(autoincrement())
-  leaveId          Int
-  leave            Leave    @relation(fields: [leaveId], references: [id])
-  employeeNik      String
-  employee         Employee @relation(fields: [employeeNik], references: [nik])
-  status Status   @default(WAITING)
+  id          Int      @id @default(autoincrement())
+  leaveId     Int
+  leave       Leave    @relation(fields: [leaveId], references: [id])
+  employeeNik String
+  employee    Employee @relation(fields: [employeeNik], references: [nik])
+  status      Status   @default(WAITING)
+}
+
+model Page {
+  id         Int        @id @default(autoincrement())
+  name       String
+  created_at DateTime   @default(now())
+  rolePages  RolePage[]
+}
+
+model RolePage {
+  id     Int  @id @default(autoincrement())
+  roleId Int
+  pageId Int
+  role   Role @relation(fields: [roleId], references: [id])
+  page   Page @relation(fields: [pageId], references: [id])
 }
