@@ -9,13 +9,17 @@ const collectiveLeaveValidation = validate({
       message: 'typeOfLeaveId should be 1 or 2',
     })
     .refine(recordExist('typeOfLeave', 'id')),
-  reason: z.string(),
+  reason: z.string().refine((data) => data.trim() !== '', {
+    message: 'Reason cannot be empty',
+  }),
   startLeave: z.coerce.date(),
   endLeave: z.coerce.date(),
 });
 
 const personalLeaveValidation = validate({
-  reason: z.string(),
+  reason: z.string().refine((data) => data.trim() !== '', {
+    message: 'Reason cannot be empty',
+  }),
   startLeave: z.coerce.date(),
   endLeave: z.coerce.date(),
 });
