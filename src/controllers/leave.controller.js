@@ -326,7 +326,7 @@ async function collectiveLeave(req, res) {
     const { typeOfLeaveId, reason, startLeave, endLeave } = req.body;
 
     // Validate that the end date is greater than the start date
-    if (new Date(endLeave) <= new Date(startLeave)) {
+    if (new Date(endLeave) < new Date(startLeave)) {
       return errorResponse(res, 'End date should be greater than start date', null, 400);
     }
 
@@ -477,7 +477,7 @@ async function createPersonalLeave(req, res) {
     const { nik } = req.params;
 
     // Validate that end date is greater than start date
-    if (new Date(endLeave) <= new Date(startLeave)) {
+    if (new Date(endLeave) < new Date(startLeave)) {
       return errorResponse(res, 'End date should be greater than start date', null, 400);
     }
 

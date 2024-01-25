@@ -75,10 +75,21 @@ function calculateLeaveAmount(startLeave, endLeave) {
   const startDate = new Date(startLeave);
   const endDate = new Date(endLeave);
 
-  const timeDifference = Math.abs(endDate - startDate);
-  const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+  let totalDays = 0;
 
-  return daysDifference;
+  while (startDate <= endDate) {
+    const dayOfWeek = startDate.getDay();
+
+    // Jika bukan Sabtu (6) atau Minggu (0), tambahkan ke totalDays
+    if (dayOfWeek !== 6 && dayOfWeek !== 0) {
+      totalDays++;
+    }
+
+    // Tambah satu hari ke startDate
+    startDate.setDate(startDate.getDate() + 1);
+  }
+
+  return totalDays;
 }
 
 function formatDateObjectToDDMMYYYY(dateObject) {
