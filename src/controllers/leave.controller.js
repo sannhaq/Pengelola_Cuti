@@ -709,6 +709,11 @@ async function allLeaves(req, res) {
       take: pagination.meta.perPage,
     });
 
+    // Count total leaves for the specified status
+    const totalLeaves = await prisma.leaveEmployee.count({
+      where: filter,
+    });
+
     // Format the result to include leaveEmployeeId and leaveUse
     const allLeave = leaveHistory.map((item) => ({
       ...item.employee,
@@ -718,13 +723,16 @@ async function allLeaves(req, res) {
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
     }));
 
-    return successResponseWithPage(
-      res,
-      'Successfully get all leave history',
-      allLeave,
-      200,
-      pagination.meta,
-    );
+    return successResponseWithPage(res, 'Successfully get all leave history', allLeave, 200, {
+      total: totalLeaves, // Total leaves based on the applied filters
+      lastPage: Math.ceil(totalLeaves / perPage), // Calculate lastPage based on total and perPage
+      currPage: pagination.meta.currPage,
+      perPage: pagination.meta.perPage,
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
+      prev: pagination.meta.prev,
+      next: pagination.meta.next,
+    });
   } catch (e) {
     console.log(e);
     return errorResponse(res, 'Failed to get leave history', null, 500);
