@@ -601,7 +601,7 @@ async function addEmployee(req, res) {
     });
 
     // Reset amountOfLeave ke 12 jika tahun baru dimulai
-    if (!isContract && moment().format('YYYY') !== moment(startContract).format('YYYY')) {
+    if (!isContract && moment().format('YYYY') !== moment(startContract).format('YYYY') && moment().month() === 0) {
       await prisma.employee.update({
         where: {
           nik,
