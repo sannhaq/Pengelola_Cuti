@@ -43,17 +43,15 @@ async function getAll(req, res) {
       take: pagination.meta.perPage,
     };
 
+    const filter = {};
     // Build search conditions dynamically based on provided search parameter
     if (search) {
-      const searchConditions = {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { nik: { contains: search } },
-          { positions: { name: { contains: search, mode: 'insensitive' } }, isWorking: true },
-        ],
-      };
-
-      baseQuery = { ...baseQuery, where: searchConditions };
+      filter.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { nik: { contains: search } },
+        { positions: { name: { contains: search, mode: 'insensitive' } }, isWorking: true },
+      ];
+      baseQuery = { ...baseQuery, where: filter };
     }
 
     // Add orderBy condition based on the orderBy parameter
@@ -86,13 +84,26 @@ async function getAll(req, res) {
       },
     }));
 
+    const totalEmployee = await prisma.employee.count({
+      where: filter,
+    });
+
     // Return success response with paginated employee data
     return successResponseWithPage(
       res,
       'Successfully retrieved employees',
       formattedEmployees,
       200,
-      pagination.meta,
+      {
+        total: totalEmployee,
+        currPage: pagination.meta.currPage,
+        lastPage: Math.ceil(totalEmployee / perPage),
+        perPage: pagination.meta.perPage,
+        skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+        take: pagination.meta.perPage,
+        prev: pagination.meta.prev,
+        next: pagination.meta.next,
+      },
     );
   } catch (error) {
     console.error('Error getting employees:', error);
