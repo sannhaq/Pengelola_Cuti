@@ -502,69 +502,82 @@ async function addEmployee(req, res) {
     const randomPassword = crypto.randomBytes(8).toString('hex');
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-    // Deklarasi variabel amountOfLeave
     let amountOfLeave;
 
     if (isContract) {
       if (newContract) {
-        // Logika untuk newContract true
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
-    
+        
         if (monthsOfWork >= 3) {
-          // Tambahkan amountOfLeave setelah 3 bulan bekerja
           amountOfLeave = Math.max(monthsOfWork - 2, 0);
-    
-          // Tambahkan amountOfLeave hanya 1x setiap bulan
-          const startContractDate = moment.utc(startContract).toDate();
-          const rule = new schedule.RecurrenceRule();
-          rule.date = startContractDate.getDate();
-          rule.month = new schedule.Range(0, 11);
-
-          schedule.scheduleJob(rule, async () => {
-            await prisma.employee.update({
-              where: {
-                nik,
-              },
-              data: {
-                amountOfLeave: {
-                  increment: 1,
-                },
-              },
-            });
-          });
         } else {
-          // Jika belum bekerja lebih dari 3 bulan, set amountOfLeave menjadi 0
           amountOfLeave = 0;
         }
-      } else {
-        const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
-        // Logika untuk newContract false
-        // Tambahkan amountOfLeave di bulan pertama
-        amountOfLeave = Math.max(1 + monthsOfWork, 1);
-        // Tambahkan amountOfLeave setiap bulan
-        const startContractDate = moment.utc(startContract).toDate();
+
+        const startContractDate = moment.utc(startContract).date();
         const rule = new schedule.RecurrenceRule();
-        rule.date = startContractDate.getDate();
+        rule.date = startContractDate;
         rule.month = new schedule.Range(0, 11);
 
         schedule.scheduleJob(rule, async () => {
-          await prisma.employee.update({
-            where: {
-              nik,
-            },
-            data: {
-              amountOfLeave: {
-                increment: 1,
-              },
-            },
-          });
+          const today = moment.utc();
+          let lastIncrementDate = moment.utc(); // Menggunakan let untuk memungkinkan perubahan nilai
+
+          if (!lastIncrementDate.isSame(today, 'month')) {
+            // Jika endContract belum tercapai, lakukan penambahan
+            if (today.isBefore(moment.utc(endContract))) {
+              await prisma.employee.update({
+                where: {
+                  nik,
+                },
+                data: {
+                  amountOfLeave: {
+                    increment: 1,
+                  },
+                },
+              });
+
+              // Perbarui tanggal penambahan terakhir ke tanggal saat ini
+              lastIncrementDate = today;
+            }
+          }
+        });
+      } else {
+        const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
+        amountOfLeave = Math.max(1 + monthsOfWork, 1);
+
+        const startContractDate = moment.utc(startContract).date();
+        const rule = new schedule.RecurrenceRule();
+        rule.date = startContractDate;
+        rule.month = new schedule.Range(0, 11);
+
+        schedule.scheduleJob(rule, async () => {
+          const today = moment.utc();
+          let lastIncrementDate = moment.utc(); // Menggunakan let untuk memungkinkan perubahan nilai
+
+          if (!lastIncrementDate.isSame(today, 'month')) {
+            // Jika endContract belum tercapai, lakukan penambahan
+            if (today.isBefore(moment.utc(endContract))) {
+              await prisma.employee.update({
+                where: {
+                  nik,
+                },
+                data: {
+                  amountOfLeave: {
+                    increment: 1,
+                  },
+                },
+              });
+
+              // Perbarui tanggal penambahan terakhir ke tanggal saat ini
+              lastIncrementDate = today;
+            }
+          }
         });
       }
     } else {
-      // Jika bukan kontrak
       amountOfLeave = 12;
     }
-      
 
     // Buat employee baru di database
     const createdEmployee = await prisma.employee.create({
