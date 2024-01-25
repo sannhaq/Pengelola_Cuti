@@ -60,15 +60,14 @@ async function getAll(req, res) {
       baseQuery = { ...baseQuery, orderBy: { [field]: order } };
     }
 
-    // Add isWorking condition based on the isWorking parameter
+    // Build isWorking condition based on the isWorking parameter
     if (isWorking !== undefined) {
-      baseQuery = {
-        ...baseQuery,
-        where: {
-          ...baseQuery.where,
-          isWorking: isWorking.toLowerCase() === 'true',
-        },
-      };
+      filter.isWorking = isWorking.toLowerCase() === 'true';
+    }
+
+    // Combine search and isWorking conditions
+    if (Object.keys(filter).length > 0) {
+      baseQuery = { ...baseQuery, where: { ...baseQuery.where, ...filter } };
     }
 
     // Fetch employees with selected fields and positions' names based on search conditions and orderBy
