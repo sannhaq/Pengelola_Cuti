@@ -480,6 +480,11 @@ async function createPersonalLeave(req, res) {
     if (new Date(endLeave) < new Date(startLeave)) {
       return errorResponse(res, 'End date should be greater than start date', null, 400);
     }
+    const leaveAmount = calculateLeaveAmount(startLeave, endLeave);
+
+    if (leaveAmount > 8) {
+      return errorResponse(res, 'Leave can only be taken for a maximum of 8 days', null, 400);
+    }
 
     // Create a new personal leave entry in the database
     const leaveData = await prisma.leave.create({
