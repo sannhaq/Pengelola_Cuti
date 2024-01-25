@@ -580,6 +580,11 @@ async function addEmployee(req, res) {
       amountOfLeave = 12;
     }
 
+    // Validasi agar endContract tidak kurang dari startContract
+    if (isContract && moment.utc(endContract).isBefore(moment.utc(startContract))) {
+      return errorResponse(res, 'End contract date cannot be earlier than start contract date', '', 400);
+    }
+
     // Buat employee baru di database
     const createdEmployee = await prisma.employee.create({
       data: {
@@ -614,11 +619,6 @@ async function addEmployee(req, res) {
         },
       },
     });
-
-    // Validasi agar endContract tidak kurang dari startContract
-    if (isContract && moment.utc(endContract).isBefore(moment.utc(startContract))) {
-      return errorResponse(res, 'End contract date cannot be earlier than start contract date', '', 400);
-    }
 
     // Reset amountOfLeave ke 12 jika tahun baru dimulai
     if (!isContract && moment().format('YYYY') !== moment(startContract).format('YYYY') && moment().month() === 0) {
