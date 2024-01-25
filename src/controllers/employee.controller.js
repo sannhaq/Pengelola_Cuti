@@ -122,6 +122,7 @@ async function getNIK(req, res) {
         isWorking: true,
         typeOfEmployee: {
           select: {
+            newContract: true,
             startContract: true,
             isContract: true,
             endContract: true,
