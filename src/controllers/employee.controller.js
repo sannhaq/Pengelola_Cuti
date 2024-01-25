@@ -505,15 +505,16 @@ async function addEmployee(req, res) {
     // Deklarasi variabel amountOfLeave
     let amountOfLeave;
 
-    // Logika untuk menentukan nilai amountOfLeave
     if (isContract) {
       if (newContract) {
         // Logika untuk newContract true
-        // Tambahkan amountOfLeave setelah 3 bulan bekerja
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
+    
         if (monthsOfWork >= 3) {
+          // Tambahkan amountOfLeave setelah 3 bulan bekerja
           amountOfLeave = Math.max(monthsOfWork - 2, 0);
-          // Tambahkan amountOfLeave setiap bulan
+    
+          // Tambahkan amountOfLeave hanya 1x setiap bulan
           const startContractDate = moment.utc(startContract).toDate();
           const rule = new schedule.RecurrenceRule();
           rule.date = startContractDate.getDate();
@@ -563,6 +564,7 @@ async function addEmployee(req, res) {
       // Jika bukan kontrak
       amountOfLeave = 12;
     }
+      
 
     // Buat employee baru di database
     const createdEmployee = await prisma.employee.create({
@@ -598,6 +600,11 @@ async function addEmployee(req, res) {
         },
       },
     });
+
+    // Validasi agar endContract tidak kurang dari startContract
+    if (isContract && moment.utc(endContract).isBefore(moment.utc(startContract))) {
+      return errorResponse(res, 'End contract date cannot be earlier than start contract date', '', 400);
+    }
 
     // Reset amountOfLeave ke 12 jika tahun baru dimulai
     if (!isContract && moment().format('YYYY') !== moment(startContract).format('YYYY') && moment().month() === 0) {
