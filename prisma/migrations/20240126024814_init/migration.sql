@@ -1,6 +1,9 @@
 -- CreateEnum
 CREATE TYPE "Status" AS ENUM ('APPROVE', 'WAITING', 'REJECT');
 
+-- CreateEnum
+CREATE TYPE "Gender" AS ENUM ('L', 'P');
+
 -- CreateTable
 CREATE TABLE "Role" (
     "id" SERIAL NOT NULL,
@@ -52,6 +55,7 @@ CREATE TABLE "Employee" (
     "historicalName" TEXT NOT NULL,
     "historicalNik" TEXT NOT NULL,
     "amountOfLeave" INTEGER NOT NULL,
+    "gender" "Gender" NOT NULL,
     "userId" INTEGER NOT NULL,
     "typeOfEmployeeId" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

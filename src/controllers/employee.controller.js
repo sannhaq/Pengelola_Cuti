@@ -35,6 +35,7 @@ async function getAll(req, res) {
             name: true,
           },
         },
+        gender: true,
         amountOfLeave: true,
         isWorking: true,
       },

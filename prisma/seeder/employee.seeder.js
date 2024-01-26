@@ -2,6 +2,7 @@ const { prisma } = require('./config');
 const { faker } = require('@faker-js/faker');
 
 const generateRandomBoolean = () => Math.random() < 0.5;
+const genderEnum = ['L', 'P'];
 
 async function employeeSeed() {
   const employees = [];
@@ -15,7 +16,7 @@ async function employeeSeed() {
       amountOfLeave: faker.number.int({ min: 9, max: 20 }),
       historicalName: faker.person.fullName(),
       historicalNik: i.toString(),
-      amountOfLeave: faker.number.int({ min: 9, max: 20 }),
+      gender: genderEnum[Math.floor(Math.random() * genderEnum.length)],
       userId: i,
       typeOfEmployeeId: i,
       created_at: new Date(),
