@@ -51,7 +51,21 @@ async function getLeaveHistoryNik(req, res) {
 
     // Check if leave history is empty
     if (!leaveHistory || leaveHistory.length === 0) {
-      return successResponse(res, 'No leave history found', [], 200, pagination.meta);
+      return successResponseWithPage(
+        res,
+        'No leave history found',
+        [
+          await prisma.employee.findUnique({
+            where: { nik: nik },
+            select: {
+              nik: true,
+              name: true,
+            },
+          }),
+        ],
+        200,
+        pagination.meta,
+      );
     }
 
     // Count total leave records for the specified employeeNik
