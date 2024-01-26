@@ -506,6 +506,19 @@ async function createPersonalLeave(req, res) {
     }
     const leaveAmount = calculateLeaveAmount(startLeave, endLeave);
 
+    // Retrieve employee's data
+    const employeeData = await prisma.employee.findUnique({
+      where: { nik: nik },
+      select: {
+        amountOfLeave: true,
+      },
+    });
+
+    // Check if leave amount exceeds the available amount of leave
+    if (leaveAmount > employeeData.amountOfLeave) {
+      return errorResponse(res, 'Not enough leave balance', null, 400);
+    }
+
     if (leaveAmount > 8) {
       return errorResponse(res, 'Leave can only be taken for a maximum of 8 days', null, 400);
     }
@@ -513,7 +526,7 @@ async function createPersonalLeave(req, res) {
     // Create a new personal leave entry in the database
     const leaveData = await prisma.leave.create({
       data: {
-        typeOfLeaveId: 3, // Assuming typeOfLeaveId for personal leave is 3, update accordingly
+        typeOfLeaveId: 3,
         reason,
         startLeave,
         endLeave,
