@@ -4,6 +4,9 @@ CREATE TYPE "Status" AS ENUM ('APPROVE', 'WAITING', 'REJECT');
 -- CreateEnum
 CREATE TYPE "Gender" AS ENUM ('L', 'P');
 
+-- CreateEnum
+CREATE TYPE "GenderSpecialLeave" AS ENUM ('L', 'P', 'LP');
+
 -- CreateTable
 CREATE TABLE "Role" (
     "id" SERIAL NOT NULL,
@@ -101,8 +104,36 @@ CREATE TABLE "LeaveEmployee" (
     "leaveId" INTEGER NOT NULL,
     "employeeNik" TEXT NOT NULL,
     "status" "Status" NOT NULL DEFAULT 'WAITING',
+    "note" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "LeaveEmployee_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SpecialLeave" (
+    "id" SERIAL NOT NULL,
+    "leaveTitle" TEXT NOT NULL,
+    "gender" "GenderSpecialLeave" NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "typeOfLeaveId" INTEGER NOT NULL,
+    "leaveInformation" TEXT NOT NULL,
+
+    CONSTRAINT "SpecialLeave_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmployeeSpecialLeave" (
+    "id" SERIAL NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "specialLeaveId" INTEGER NOT NULL,
+    "status" "Status" NOT NULL,
+    "note" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmployeeSpecialLeave_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -137,3 +168,12 @@ ALTER TABLE "LeaveEmployee" ADD CONSTRAINT "LeaveEmployee_leaveId_fkey" FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE "LeaveEmployee" ADD CONSTRAINT "LeaveEmployee_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SpecialLeave" ADD CONSTRAINT "SpecialLeave_typeOfLeaveId_fkey" FOREIGN KEY ("typeOfLeaveId") REFERENCES "TypeOfLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmployeeSpecialLeave" ADD CONSTRAINT "EmployeeSpecialLeave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmployeeSpecialLeave" ADD CONSTRAINT "EmployeeSpecialLeave_specialLeaveId_fkey" FOREIGN KEY ("specialLeaveId") REFERENCES "SpecialLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

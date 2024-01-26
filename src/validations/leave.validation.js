@@ -23,4 +23,10 @@ const personalLeaveValidation = validate({
   startLeave: z.coerce.date(),
   endLeave: z.coerce.date(),
 });
-module.exports = { collectiveLeaveValidation, personalLeaveValidation };
+
+const rejectLeave = validate({
+  note: z.string().refine((data) => data.trim() !== '', {
+    message: 'Reason cannot be empty',
+  }),
+});
+module.exports = { collectiveLeaveValidation, personalLeaveValidation, rejectLeave };

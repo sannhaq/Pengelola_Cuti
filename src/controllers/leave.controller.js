@@ -24,6 +24,7 @@ async function getLeaveHistoryNik(req, res) {
     // Retrieve leave history for the specified employeeNik
     const leaveHistory = await prisma.leaveEmployee.findMany({
       where: { employeeNik: nik },
+      orderBy: { updated_at: 'desc' },
       include: {
         employee: {
           select: {
@@ -51,21 +52,22 @@ async function getLeaveHistoryNik(req, res) {
 
     // Check if leave history is empty
     if (!leaveHistory || leaveHistory.length === 0) {
-      return successResponseWithPage(
-        res,
-        'No leave history found',
-        [
-          await prisma.employee.findUnique({
-            where: { nik: nik },
-            select: {
-              nik: true,
-              name: true,
-            },
-          }),
-        ],
-        200,
-        pagination.meta,
-      );
+      const employeeInfo = await prisma.employee.findUnique({
+        where: { nik: nik },
+        select: {
+          nik: true,
+          name: true,
+        },
+      });
+
+      const total = 0;
+      const lastPage = 0;
+
+      return successResponseWithPage(res, 'No leave history found', [employeeInfo], 200, {
+        ...pagination.meta,
+        total,
+        lastPage,
+      });
     }
 
     // Count total leave records for the specified employeeNik
@@ -82,6 +84,7 @@ async function getLeaveHistoryNik(req, res) {
       ...item.leave,
       status: item.status,
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+      note: item.note,
     }));
 
     return successResponseWithPage(res, 'Successfully retrieved leave history', allLeaves, 200, {
@@ -109,6 +112,9 @@ async function getLeaveHistoryMe(req, res) {
         employee: {
           select: {
             leaveEmployees: {
+              orderBy: {
+                updated_at: 'desc',
+              },
               select: {
                 id: true,
                 status: true,
@@ -126,6 +132,7 @@ async function getLeaveHistoryMe(req, res) {
                     reason: true,
                   },
                 },
+                note: true,
               },
             },
           },
@@ -151,6 +158,7 @@ async function getLeaveHistoryMe(req, res) {
       leaveEmployeeId: item.id,
       status: item.status,
       leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+      note: item.note,
     }));
 
     // Create a sanitized user object
@@ -417,6 +425,7 @@ async function rejectOptionalLeave(req, res) {
   try {
     // Extract necessary data from the request parameters and user information
     const { id } = req.params;
+    const { note } = req.body;
     const userId = req.user.id;
 
     // Retrieve the employeeNik of the requesting user
@@ -458,6 +467,7 @@ async function rejectOptionalLeave(req, res) {
       where: { id: parseInt(id) },
       data: {
         status: 'REJECT',
+        note: note,
       },
     });
 
@@ -570,6 +580,7 @@ async function approvePersonalLeave(req, res) {
       where: { id: parseInt(id) },
       data: {
         status: 'APPROVE',
+        note: null,
       },
     });
 
@@ -602,6 +613,7 @@ async function approvePersonalLeave(req, res) {
 async function rejectPersonalLeave(req, res) {
   try {
     // Extract the leaveEmployee ID from the request parameters
+    const { note } = req.body;
     const { id } = req.params;
 
     // Retrieve relevant information about the leaveEmployee and associated leave
@@ -643,6 +655,7 @@ async function rejectPersonalLeave(req, res) {
       where: { id: parseInt(id) },
       data: {
         status: 'REJECT',
+        note: note,
       },
     });
 
@@ -703,6 +716,9 @@ async function allLeaves(req, res) {
     // Retrieve leave history based on the applied filters
     const leaveHistory = await prisma.leaveEmployee.findMany({
       where: filter,
+      orderBy: {
+        updated_at: 'desc',
+      },
       include: {
         employee: {
           select: {
