@@ -130,6 +130,7 @@ async function getNIK(req, res) {
             name: true,
           },
         },
+        gender: true,
         isWorking: true,
         typeOfEmployee: {
           select: {
@@ -288,7 +289,7 @@ async function getMe(req, res) {
 
 async function updateEmployee(req, res) {
   const employeeNik = req.params.nik;
-  const { name, positionId, typeOfEmployee, roleId } = req.body;
+  const { name, positionId, typeOfEmployee, roleId, gender } = req.body;
 
   try {
     // Fetch the existing employee data from the database using Prisma
@@ -316,6 +317,7 @@ async function updateEmployee(req, res) {
       // Menyiapkan data pembaruan untuk pengguna admin atau super admin
       const updateData = {
         name,
+        gender,
         positions: {
           connect: { id: positionId },
         },
@@ -355,6 +357,7 @@ async function updateEmployee(req, res) {
         },
         data: {
           name,
+          gender,
         },
       });
     }
