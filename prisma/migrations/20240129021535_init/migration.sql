@@ -54,7 +54,6 @@ CREATE TABLE "Employee" (
     "positionId" INTEGER NOT NULL,
     "historicalName" TEXT NOT NULL,
     "historicalNik" TEXT NOT NULL,
-    "amountOfLeave" INTEGER NOT NULL,
     "gender" "Gender" NOT NULL,
     "userId" INTEGER NOT NULL,
     "typeOfEmployeeId" INTEGER NOT NULL,
@@ -62,6 +61,19 @@ CREATE TABLE "Employee" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Employee_pkey" PRIMARY KEY ("nik")
+);
+
+-- CreateTable
+CREATE TABLE "AmountOfLeave" (
+    "id" SERIAL NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
+    "isActive" BOOLEAN NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AmountOfLeave_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -125,6 +137,9 @@ ALTER TABLE "Employee" ADD CONSTRAINT "Employee_userId_fkey" FOREIGN KEY ("userI
 
 -- AddForeignKey
 ALTER TABLE "Employee" ADD CONSTRAINT "Employee_typeOfEmployeeId_fkey" FOREIGN KEY ("typeOfEmployeeId") REFERENCES "TypeOfEmployee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AmountOfLeave" ADD CONSTRAINT "AmountOfLeave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Leave" ADD CONSTRAINT "Leave_typeOfLeaveId_fkey" FOREIGN KEY ("typeOfLeaveId") REFERENCES "TypeOfLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

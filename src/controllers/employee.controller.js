@@ -36,7 +36,13 @@ async function getAll(req, res) {
           },
         },
         gender: true,
-        amountOfLeave: true,
+        amountOfLeave: {
+          select: {
+            id: true,
+            amount: true,
+            year: true,
+          },
+        },
         isWorking: true,
       },
       // Calculate skip and take based on pagination information
@@ -262,18 +268,20 @@ async function getMe(req, res) {
     const userId = req.user.id;
 
     // Fetch user data, including associated employee data, from the database using Prisma
-    const employee = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        employee: {
+    const employee = await prisma.employee.findUnique({
+      where: { userId },
+      select: {
+        nik: true,
+        name: true,
+        amountOfLeave: {
           select: {
-            nik: true,
-            name: true,
-            amountOfLeave: true,
-          },
-        },
-      },
-    });
+            id: true,
+            amount: true,
+            year: true
+          }
+        }
+      }
+    });    
 
     // Return a 404 response if no user is found with the given ID
     if (!employee) {
@@ -472,7 +480,7 @@ async function resetPassword(req, res) {
 
 // Fungsi untuk menambahkan employee baru
 async function addEmployee(req, res) {
-  const { nik, name, email, isContract, startContract, endContract, positionId, newContract } =
+  const { nik, name, email, isContract, startContract, endContract, positionId, newContract, gender } =
     req.body;
   const { user } = req;
 
@@ -525,7 +533,7 @@ async function addEmployee(req, res) {
 
         schedule.scheduleJob(rule, async () => {
           const today = moment.utc();
-          let lastIncrementDate = moment.utc(); // Menggunakan let untuk memungkinkan perubahan nilai
+          let lastIncrementDate = moment.utc(); 
 
           if (!lastIncrementDate.isSame(today, 'month')) {
             // Jika endContract belum tercapai, lakukan penambahan
@@ -536,7 +544,11 @@ async function addEmployee(req, res) {
                 },
                 data: {
                   amountOfLeave: {
-                    increment: 1,
+                    select: {
+                      amount: {
+                        increment: 1,
+                      }
+                    }
                   },
                 },
               });
@@ -557,7 +569,7 @@ async function addEmployee(req, res) {
 
         schedule.scheduleJob(rule, async () => {
           const today = moment.utc();
-          let lastIncrementDate = moment.utc(); // Menggunakan let untuk memungkinkan perubahan nilai
+          let lastIncrementDate = moment.utc();
 
           if (!lastIncrementDate.isSame(today, 'month')) {
             // Jika endContract belum tercapai, lakukan penambahan
@@ -568,7 +580,11 @@ async function addEmployee(req, res) {
                 },
                 data: {
                   amountOfLeave: {
-                    increment: 1,
+                    select: {
+                      amount: {
+                        increment: 1,
+                      }
+                    }
                   },
                 },
               });
@@ -596,6 +612,7 @@ async function addEmployee(req, res) {
         isWorking: true,
         historicalName,
         historicalNik,
+        gender,
         positions: {
           connect: { id: positionId },
         },
@@ -607,7 +624,17 @@ async function addEmployee(req, res) {
             newContract: isContract ? newContract : false,
           },
         },
-        amountOfLeave,
+        amountOfLeave: {
+          createMany: {
+            data: [
+              {
+                amount: amountOfLeave,
+                year: moment().year(), 
+                isActive: true,
+              },
+            ],
+          },
+        },
         user: {
           create: {
             email,
@@ -622,18 +649,6 @@ async function addEmployee(req, res) {
         },
       },
     });
-
-    // Reset amountOfLeave ke 12 jika tahun baru dimulai
-    if (!isContract && moment().format('YYYY') !== moment(startContract).format('YYYY') && moment().month() === 0) {
-      await prisma.employee.update({
-        where: {
-          nik,
-        },
-        data: {
-          amountOfLeave: 12,
-        },
-      });
-    }
 
     // Konfigurasi transporter untuk mengirim email
     const transporter = nodemailer.createTransport({

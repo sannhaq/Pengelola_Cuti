@@ -65,7 +65,7 @@ model Employee {
   positionId       Int
   historicalName   String
   historicalNik    String
-  amountOfLeave    Int
+  amountOfLeave    AmountOfLeave[]
   gender           Gender
   user             User            @relation(fields: [userId], references: [id])
   userId           Int             @unique
@@ -74,6 +74,17 @@ model Employee {
   created_at       DateTime        @default(now())
   updated_at       DateTime        @updatedAt
   leaveEmployees   LeaveEmployee[]
+}
+
+model AmountOfLeave {
+  id          Int      @id @default(autoincrement())
+  amount      Int
+  year        Int
+  isActive    Boolean
+  employee    Employee @relation(fields: [employeeNik], references: [nik])
+  employeeNik String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 }
 
 model TypeOfLeave {
