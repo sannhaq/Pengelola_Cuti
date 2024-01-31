@@ -1,4 +1,6 @@
 const { z } = require('zod');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 function sum(a, b) {
   return a + b;
@@ -148,6 +150,43 @@ function validate(scheme) {
   };
 }
 
+async function updateLeaveAmount(employeeNik, deductionInfo, operation) {
+  let today = new Date();
+  let currentYear = today.getFullYear();
+  let previousYear = currentYear - 1;
+
+  const amountOfLeave = await prisma.amountOfLeave.findMany({
+    where: { employeeNik: employeeNik },
+    select: {
+      id: true,
+      year: true,
+    },
+  });
+
+  for (const entry of amountOfLeave) {
+    if (
+      entry.year === previousYear &&
+      deductionInfo.previousYearDeduct !== null &&
+      deductionInfo.previousYearDeduct !== 0
+    ) {
+      await prisma.amountOfLeave.update({
+        where: { id: entry.id },
+        data: { amount: { [operation]: deductionInfo.previousYearDeduct } }, // Menggunakan parameter operasi
+      });
+    }
+    if (
+      entry.year === currentYear &&
+      deductionInfo.currentYearDeduct !== null &&
+      deductionInfo.currentYearDeduct !== 0
+    ) {
+      await prisma.amountOfLeave.update({
+        where: { id: entry.id },
+        data: { amount: { [operation]: deductionInfo.currentYearDeduct } }, // Menggunakan parameter operasi
+      });
+    }
+  }
+}
+
 module.exports = {
   sum,
   successResponse,
@@ -159,4 +198,5 @@ module.exports = {
   formatEmployeeData,
   formatLeaveHistoryData,
   validate,
+  updateLeaveAmount,
 };

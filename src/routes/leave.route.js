@@ -16,6 +16,7 @@ router.get('/optional', roleMiddleware('User', 'Admin'), leaveController.optiona
 router.patch(
   '/optional/:id/reject',
   roleMiddleware('User', 'Admin'),
+  validation.rejectLeave,
   leaveController.rejectOptionalLeave,
 );
 // GET leave history based on nik
@@ -41,7 +42,12 @@ router.patch(
   leaveController.approvePersonalLeave,
 );
 // PATCH reject the user's leave application
-router.patch('/personal/:id/reject', roleMiddleware('Admin'), leaveController.rejectPersonalLeave);
+router.patch(
+  '/personal/:id/reject',
+  roleMiddleware('Admin'),
+  validation.rejectLeave,
+  leaveController.rejectPersonalLeave,
+);
 // GET All leave
 router.get('/all', roleMiddleware('Admin'), leaveController.allLeaves);
 

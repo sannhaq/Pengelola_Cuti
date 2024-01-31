@@ -21,6 +21,12 @@ enum Gender {
   P
 }
 
+enum GenderSpecialLeave {
+  L
+  P
+  LP
+}
+
 model Role {
   id         Int      @id @default(autoincrement())
   name       String
@@ -58,22 +64,24 @@ model Positions {
 }
 
 model Employee {
-  nik              String          @id
-  name             String
-  isWorking        Boolean
-  positions        Positions       @relation(fields: [positionId], references: [id])
-  positionId       Int
-  historicalName   String
-  historicalNik    String
-  amountOfLeave    AmountOfLeave[]
-  gender           Gender
-  user             User            @relation(fields: [userId], references: [id])
-  userId           Int             @unique
-  typeOfEmployee   TypeOfEmployee  @relation(fields: [typeOfEmployeeId], references: [id])
-  typeOfEmployeeId Int
-  created_at       DateTime        @default(now())
-  updated_at       DateTime        @updatedAt
-  leaveEmployees   LeaveEmployee[]
+  nik                   String                 @id
+  name                  String
+  isWorking             Boolean
+  positions             Positions              @relation(fields: [positionId], references: [id])
+  positionId            Int
+  historicalName        String
+  historicalNik         String
+  amountOfLeave         AmountOfLeave[]
+  gender                Gender
+  user                  User                   @relation(fields: [userId], references: [id])
+  userId                Int                    @unique
+  typeOfEmployee        TypeOfEmployee         @relation(fields: [typeOfEmployeeId], references: [id])
+  typeOfEmployeeId      Int
+  created_at            DateTime               @default(now())
+  updated_at            DateTime               @updatedAt
+  leaveEmployees        LeaveEmployee[]
+  employeeSpecialLeaves EmployeeSpecialLeave[]
+  deductedLeaves        DeductedLeave[]
 }
 
 model AmountOfLeave {
@@ -88,11 +96,12 @@ model AmountOfLeave {
 }
 
 model TypeOfLeave {
-  id         Int      @id @default(autoincrement())
-  name       String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  leaves     Leave[]
+  id            Int            @id @default(autoincrement())
+  name          String
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  leaves        Leave[]
+  specialLeaves SpecialLeave[]
 }
 
 model Leave {
@@ -103,6 +112,7 @@ model Leave {
   endLeave       DateTime        @db.Date
   reason         String
   leaveEmployees LeaveEmployee[]
+  deductedLeaves DeductedLeave[]
 }
 
 model UserToken {
@@ -120,4 +130,40 @@ model LeaveEmployee {
   employeeNik String
   employee    Employee @relation(fields: [employeeNik], references: [nik])
   status      Status   @default(WAITING)
+  note        String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+model SpecialLeave {
+  id                    Int                    @id @default(autoincrement())
+  leaveTitle            String
+  gender                GenderSpecialLeave
+  amount                Int
+  typeOfLeave           TypeOfLeave            @relation(fields: [typeOfLeaveId], references: [id])
+  typeOfLeaveId         Int
+  leaveInformation      String                 @db.Text
+  employeeSpecialLeaves EmployeeSpecialLeave[]
+}
+
+model EmployeeSpecialLeave {
+  id             Int          @id @default(autoincrement())
+  employee       Employee     @relation(fields: [employeeNik], references: [nik])
+  employeeNik    String
+  specialLeave   SpecialLeave @relation(fields: [specialLeaveId], references: [id])
+  specialLeaveId Int
+  status         Status
+  note           String?
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+}
+
+model DeductedLeave {
+  id                 Int      @id @default(autoincrement())
+  leave              Leave    @relation(fields: [leaveId], references: [id])
+  leaveId            Int
+  employee           Employee @relation(fields: [employeeNik], references: [nik])
+  employeeNik        String
+  previousYearDeduct Int?
+  currentYearDeduct  Int?
 }
