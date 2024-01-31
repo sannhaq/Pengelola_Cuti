@@ -488,6 +488,101 @@ async function resetPassword(req, res) {
   }
 }
 
+async function calculateAmountOfLeave(isContract, newContract, startContract, endContract, nik) {
+  let amountOfLeave;
+
+  if (isContract) {
+    if (newContract) {
+      const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
+
+      if (monthsOfWork >= 3) {
+        amountOfLeave = Math.max(monthsOfWork - 2, 0);
+      } else {
+        amountOfLeave = 0;
+      }
+
+      const startContractDate = moment.utc(startContract).date();
+      const rule = new schedule.RecurrenceRule();
+      rule.date = startContractDate;
+      rule.month = new schedule.Range(0, 11);
+
+      schedule.scheduleJob(rule, async () => {
+        const today = moment.utc();
+        let lastIncrementDate = moment.utc();
+
+        if (!lastIncrementDate.isSame(today, 'month')) {
+          // Jika endContract belum tercapai dan tidak melebihi tahun saat ini, lakukan penambahan
+          if (
+            today.isBefore(moment.utc(endContract)) &&
+            moment.utc(endContract).year() === today.year()
+          ) {
+            await prisma.employee.update({
+              where: {
+                nik,
+              },
+              data: {
+                amountOfLeave: {
+                  select: {
+                    amount: {
+                      increment: 1,
+                    },
+                  },
+                },
+              },
+            });
+
+            // Perbarui tanggal penambahan terakhir ke tanggal saat ini
+            lastIncrementDate = today;
+          }
+        }
+      });
+    } else {
+      const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
+      amountOfLeave = Math.max(1 + monthsOfWork, 1);
+
+      const startContractDate = moment.utc(startContract).date();
+      const rule = new schedule.RecurrenceRule();
+      rule.date = startContractDate;
+      rule.month = new schedule.Range(0, 11);
+
+      schedule.scheduleJob(rule, async () => {
+        const today = moment.utc();
+        let lastIncrementDate = moment.utc();
+
+        if (!lastIncrementDate.isSame(today, 'month')) {
+          // Jika endContract belum tercapai dan tidak melebihi tahun saat ini, lakukan penambahan
+          if (
+            today.isBefore(moment.utc(endContract)) &&
+            moment.utc(endContract).year() === today.year()
+          ) {
+            await prisma.employee.update({
+              where: {
+                nik,
+              },
+              data: {
+                amountOfLeave: {
+                  select: {
+                    amount: {
+                      increment: 1,
+                    },
+                  },
+                },
+              },
+            });
+
+            // Perbarui tanggal penambahan terakhir ke tanggal saat ini
+            lastIncrementDate = today;
+          }
+        }
+      });
+    }
+  } else {
+    amountOfLeave = 12;
+  }
+
+  return amountOfLeave;
+}
+
 // Fungsi untuk menambahkan employee baru
 async function addEmployee(req, res) {
   const {
@@ -533,91 +628,105 @@ async function addEmployee(req, res) {
     const randomPassword = crypto.randomBytes(8).toString('hex');
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-    let amountOfLeave;
+    const amountOfLeaveData = [];
 
     if (isContract) {
+      let leaveAmount = calculateAmountOfLeave(
+        isContract,
+        newContract,
+        startContract,
+        endContract,
+        nik,
+      );
+
       if (newContract) {
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
-
-        if (monthsOfWork >= 3) {
-          amountOfLeave = Math.max(monthsOfWork - 2, 0);
-        } else {
-          amountOfLeave = 0;
-        }
-
-        const startContractDate = moment.utc(startContract).date();
-        const rule = new schedule.RecurrenceRule();
-        rule.date = startContractDate;
-        rule.month = new schedule.Range(0, 11);
-
-        schedule.scheduleJob(rule, async () => {
-          const today = moment.utc();
-          let lastIncrementDate = moment.utc();
-
-          if (!lastIncrementDate.isSame(today, 'month')) {
-            // Jika endContract belum tercapai, lakukan penambahan
-            if (today.isBefore(moment.utc(endContract))) {
-              await prisma.employee.update({
-                where: {
-                  nik,
-                },
-                data: {
-                  amountOfLeave: {
-                    select: {
-                      amount: {
-                        increment: 1,
-                      },
-                    },
-                  },
-                },
-              });
-
-              // Perbarui tanggal penambahan terakhir ke tanggal saat ini
-              lastIncrementDate = today;
-            }
-          }
-        });
+        leaveAmount = monthsOfWork >= 3 ? Math.max(monthsOfWork - 3, 0) : 0;
       } else {
         const monthsOfWork = moment.utc().diff(moment.utc(startContract), 'months');
-        amountOfLeave = Math.max(1 + monthsOfWork, 1);
+        leaveAmount = Math.max(monthsOfWork, 1);
+      }
 
-        const startContractDate = moment.utc(startContract).date();
-        const rule = new schedule.RecurrenceRule();
-        rule.date = startContractDate;
-        rule.month = new schedule.Range(0, 11);
-
-        schedule.scheduleJob(rule, async () => {
-          const today = moment.utc();
-          let lastIncrementDate = moment.utc();
-
-          if (!lastIncrementDate.isSame(today, 'month')) {
-            // Jika endContract belum tercapai, lakukan penambahan
-            if (today.isBefore(moment.utc(endContract))) {
-              await prisma.employee.update({
-                where: {
-                  nik,
-                },
-                data: {
-                  amountOfLeave: {
-                    select: {
-                      amount: {
-                        increment: 1,
-                      },
-                    },
-                  },
-                },
-              });
-
-              // Perbarui tanggal penambahan terakhir ke tanggal saat ini
-              lastIncrementDate = today;
-            }
-          }
+      if (moment().isSame(moment.utc(startContract), 'year')) {
+        amountOfLeaveData.push({
+          amount: leaveAmount,
+          year: moment().year(),
+          isActive: true,
         });
+      } else {
+        const startContractYear = moment.utc(startContract).year();
+        const startContractMonth = moment.utc(startContract).month() + 1;
+        const currentYear = moment().year();
+        const currentMonth = moment().month() + 1;
+
+        let monthsSinceStart = 0;
+
+        for (let year = startContractYear; year <= currentYear; year++) {
+          const startMonth = year === startContractYear ? startContractMonth : 1;
+          const endMonth = year === currentYear ? currentMonth : 12;
+
+          for (let month = startMonth; month <= endMonth; month++) {
+            let amount;
+
+            if (newContract && year === startContractYear) {
+              // Jika newContract true dan tahun startContract, atur amount pertama setelah 3 bulan
+              amount = monthsSinceStart >= 3 ? monthsSinceStart - 2 : 0;
+            } else {
+              // Jika newContract false atau bukan tahun startContract, atur amount di bulan pertama dan bertambah setiap bulannya
+              amount =
+                month === startMonth
+                  ? 1
+                  : amountOfLeaveData[amountOfLeaveData.length - 1].amount + 1;
+            }
+
+            const existingItemIndex = amountOfLeaveData.findIndex(
+              (item) => item.year === year && item.isActive,
+            );
+
+            if (existingItemIndex !== -1) {
+              amountOfLeaveData[existingItemIndex].amount = amount;
+            } else {
+              // Jika item belum ada, tambahkan item baru
+              amountOfLeaveData.push({
+                amount,
+                year: year,
+                isActive: true,
+              });
+            }
+
+            // Tambahkan 1 ke bulan yang sudah berlalu sejak kontrak dimulai
+            monthsSinceStart++;
+          }
+        }
       }
     } else {
-      amountOfLeave = 12;
-    }
+      // Logika untuk non-kontrak
+      const amountYear = 12;
+      if (moment().isSame(moment.utc(startContract), 'year')) {
+        // Jika tahun saat ini sama dengan tahun startContract
+        amountOfLeaveData.push({
+          amount: 12,
+          year: moment().year(),
+          isActive: true,
+        });
+      } else {
+        // Jika tahun startContract tidak sama dengan tahun saat ini
+        const startContractYear = moment.utc(startContract).year();
+        const currentYear = moment().year();
 
+        for (let year = startContractYear; year <= currentYear; year++) {
+          // Set isActive menjadi true hanya pada tahun saat ini dan satu tahun sebelumnya
+          const isActive = year === currentYear || year === currentYear - 1;
+
+          // Buat record baru untuk setiap tahun dari startContract sampai tahun saat ini
+          amountOfLeaveData.push({
+            amount: amountYear,
+            year,
+            isActive,
+          });
+        }
+      }
+    }
     // Validasi agar endContract tidak kurang dari startContract
     if (isContract && moment.utc(endContract).isBefore(moment.utc(startContract))) {
       return errorResponse(
@@ -650,13 +759,7 @@ async function addEmployee(req, res) {
         },
         amountOfLeave: {
           createMany: {
-            data: [
-              {
-                amount: amountOfLeave,
-                year: moment().year(),
-                isActive: true,
-              },
-            ],
+            data: amountOfLeaveData,
           },
         },
         user: {

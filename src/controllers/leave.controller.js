@@ -840,7 +840,7 @@ async function rejectPersonalLeave(req, res) {
 async function allLeaves(req, res) {
   try {
     // Extract query parameters from the request
-    const { page, perPage, search, status } = req.query;
+    const { page, perPage, search, status, typeOfLeave } = req.query;
 
     // Perform pagination using the paginate utility function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
@@ -871,6 +871,17 @@ async function allLeaves(req, res) {
       } else {
         throw new Error('Invalid status parameter');
       }
+    }
+
+    if (typeOfLeave) {
+      filter.leave = {
+        typeOfLeave: {
+          name: {
+            contains: typeOfLeave,
+            mode: 'insensitive',
+          },
+        },
+      };
     }
 
     // Retrieve leave history based on the applied filters
