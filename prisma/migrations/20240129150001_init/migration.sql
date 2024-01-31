@@ -57,7 +57,6 @@ CREATE TABLE "Employee" (
     "positionId" INTEGER NOT NULL,
     "historicalName" TEXT NOT NULL,
     "historicalNik" TEXT NOT NULL,
-    "amountOfLeave" INTEGER NOT NULL,
     "gender" "Gender" NOT NULL,
     "userId" INTEGER NOT NULL,
     "typeOfEmployeeId" INTEGER NOT NULL,
@@ -65,6 +64,19 @@ CREATE TABLE "Employee" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Employee_pkey" PRIMARY KEY ("nik")
+);
+
+-- CreateTable
+CREATE TABLE "AmountOfLeave" (
+    "id" SERIAL NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
+    "isActive" BOOLEAN NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AmountOfLeave_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -136,6 +148,17 @@ CREATE TABLE "EmployeeSpecialLeave" (
     CONSTRAINT "EmployeeSpecialLeave_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "DeductedLeave" (
+    "id" SERIAL NOT NULL,
+    "leaveId" INTEGER NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "previousYearDeduct" INTEGER,
+    "currentYearDeduct" INTEGER,
+
+    CONSTRAINT "DeductedLeave_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -158,6 +181,9 @@ ALTER TABLE "Employee" ADD CONSTRAINT "Employee_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "Employee" ADD CONSTRAINT "Employee_typeOfEmployeeId_fkey" FOREIGN KEY ("typeOfEmployeeId") REFERENCES "TypeOfEmployee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AmountOfLeave" ADD CONSTRAINT "AmountOfLeave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Leave" ADD CONSTRAINT "Leave_typeOfLeaveId_fkey" FOREIGN KEY ("typeOfLeaveId") REFERENCES "TypeOfLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -177,3 +203,9 @@ ALTER TABLE "EmployeeSpecialLeave" ADD CONSTRAINT "EmployeeSpecialLeave_employee
 
 -- AddForeignKey
 ALTER TABLE "EmployeeSpecialLeave" ADD CONSTRAINT "EmployeeSpecialLeave_specialLeaveId_fkey" FOREIGN KEY ("specialLeaveId") REFERENCES "SpecialLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeductedLeave" ADD CONSTRAINT "DeductedLeave_leaveId_fkey" FOREIGN KEY ("leaveId") REFERENCES "Leave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeductedLeave" ADD CONSTRAINT "DeductedLeave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;

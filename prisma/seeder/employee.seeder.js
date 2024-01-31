@@ -11,9 +11,8 @@ async function employeeSeed() {
     const employee = {
       nik: i.toString(),
       name: faker.person.fullName(),
-      isWorking: generateRandomBoolean(),
+      isWorking: true,
       positionId: faker.number.int({ min: 1, max: 10 }),
-      amountOfLeave: faker.number.int({ min: 9, max: 20 }),
       historicalName: faker.person.fullName(),
       historicalNik: i.toString(),
       gender: genderEnum[Math.floor(Math.random() * genderEnum.length)],

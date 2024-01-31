@@ -71,7 +71,7 @@ model Employee {
   positionId            Int
   historicalName        String
   historicalNik         String
-  amountOfLeave         Int
+  amountOfLeave         AmountOfLeave[]
   gender                Gender
   user                  User                   @relation(fields: [userId], references: [id])
   userId                Int                    @unique
@@ -81,6 +81,18 @@ model Employee {
   updated_at            DateTime               @updatedAt
   leaveEmployees        LeaveEmployee[]
   employeeSpecialLeaves EmployeeSpecialLeave[]
+  deductedLeaves        DeductedLeave[]
+}
+
+model AmountOfLeave {
+  id          Int      @id @default(autoincrement())
+  amount      Int
+  year        Int
+  isActive    Boolean
+  employee    Employee @relation(fields: [employeeNik], references: [nik])
+  employeeNik String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 }
 
 model TypeOfLeave {
@@ -100,6 +112,7 @@ model Leave {
   endLeave       DateTime        @db.Date
   reason         String
   leaveEmployees LeaveEmployee[]
+  deductedLeaves DeductedLeave[]
 }
 
 model UserToken {
@@ -143,4 +156,14 @@ model EmployeeSpecialLeave {
   note           String?
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
+}
+
+model DeductedLeave {
+  id                 Int      @id @default(autoincrement())
+  leave              Leave    @relation(fields: [leaveId], references: [id])
+  leaveId            Int
+  employee           Employee @relation(fields: [employeeNik], references: [nik])
+  employeeNik        String
+  previousYearDeduct Int?
+  currentYearDeduct  Int?
 }
