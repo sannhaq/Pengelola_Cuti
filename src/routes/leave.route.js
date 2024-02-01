@@ -4,6 +4,7 @@ const router = express.Router();
 const leaveController = require('../controllers/leave.controller');
 const roleMiddleware = require('../middleware/role.middleware');
 const validation = require('../validations/leave.validation');
+const specialLeaveController = require('../controllers/special-leave.controller');
 
 //  api
 // GET ALL Mandatory Leave
@@ -50,5 +51,8 @@ router.patch(
 );
 // GET All leave
 router.get('/all', roleMiddleware('Admin'), leaveController.allLeaves);
+
+// GET All special leave list
+router.get('/special-leaves', roleMiddleware('Admin'), specialLeaveController.getSpecialLeaveList);
 
 module.exports = router;

@@ -10,7 +10,6 @@ const {
   sum,
   updateLeaveAmount,
 } = require('../utils/helper.util');
-const { meta } = require('eslint-plugin-prettier');
 
 async function getLeaveHistoryNik(req, res) {
   try {
@@ -837,6 +836,10 @@ async function rejectPersonalLeave(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 async function allLeaves(req, res) {
   try {
     // Extract query parameters from the request
@@ -931,14 +934,9 @@ async function allLeaves(req, res) {
     }));
 
     return successResponseWithPage(res, 'Successfully get all leave history', allLeave, 200, {
+      ...pagination.meta,
       total: totalLeaves, // Total leaves based on the applied filters
       lastPage: Math.ceil(totalLeaves / perPage), // Calculate lastPage based on total and perPage
-      currPage: pagination.meta.currPage,
-      perPage: pagination.meta.perPage,
-      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
-      take: pagination.meta.perPage,
-      prev: pagination.meta.prev,
-      next: pagination.meta.next,
     });
   } catch (e) {
     console.log(e);

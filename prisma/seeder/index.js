@@ -5,6 +5,7 @@ const { leaveEmployeeSeed } = require('./leave-employee.seeder');
 const { leaveSeed } = require('./leave.seeder');
 const { positionSeed } = require('./position.seeder');
 const { roleSeed } = require('./role.seeder');
+const { specialLeaveSeed } = require('./special-leave.seeder');
 const { typeOfEmployeeSeed } = require('./type-of-employee.seeder');
 const { typeOfLeaveSeed } = require('./type-of-leave.seeder');
 const { userSeed } = require('./user.seeder');
@@ -20,6 +21,7 @@ async function main() {
   await leaveSeed();
   await leaveEmployeeSeed();
   await amountOfLeaveSeed();
+  await specialLeaveSeed();
 }
 
 main()
