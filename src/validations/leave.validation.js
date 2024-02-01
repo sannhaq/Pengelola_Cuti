@@ -29,4 +29,25 @@ const rejectLeave = validate({
     message: 'Reason cannot be empty',
   }),
 });
-module.exports = { collectiveLeaveValidation, personalLeaveValidation, rejectLeave };
+
+const updateSpecialLeave = validate({
+  leaveTitle: z.string().optional(),
+  gender: z.enum(['L', 'P', 'LP']).optional(),
+  amount: z.coerce.number().optional(),
+  leaveInformation: z.string().optional(),
+});
+
+const createSpecialLeave = validate({
+  leaveTitle: z.string(),
+  gender: z.enum(['L', 'P', 'LP']),
+  amount: z.coerce.number(),
+  leaveInformation: z.string(),
+});
+
+module.exports = {
+  collectiveLeaveValidation,
+  personalLeaveValidation,
+  rejectLeave,
+  updateSpecialLeave,
+  createSpecialLeave,
+};

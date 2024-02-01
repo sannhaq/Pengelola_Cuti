@@ -360,7 +360,7 @@ async function collectiveLeave(req, res) {
         user: {
           role: {
             id: {
-              in: [2, 3],
+              not: 1,
             },
           },
         },

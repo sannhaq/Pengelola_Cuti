@@ -54,5 +54,27 @@ router.get('/all', roleMiddleware('Admin'), leaveController.allLeaves);
 
 // GET All special leave list
 router.get('/special-leaves', roleMiddleware('Admin'), specialLeaveController.getSpecialLeaveList);
+// GET special leave by id
+router.get(
+  '/special-leave/:id',
+  roleMiddleware('Admin'),
+  specialLeaveController.getSpecialLeaveById,
+);
+
+// PATCH special leave
+router.patch(
+  '/special-leave/:id',
+  roleMiddleware('Admin'),
+  validation.updateSpecialLeave,
+  specialLeaveController.updateSpecialLeave,
+);
+
+// POST special leave
+router.post(
+  '/special-leave',
+  roleMiddleware('Admin'),
+  validation.createSpecialLeave,
+  specialLeaveController.createSpecialLeave,
+);
 
 module.exports = router;
