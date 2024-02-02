@@ -319,10 +319,13 @@ async function updateAmountOfLeaveForEmployee(employeeNik, isContract, startCont
 
   // Jika sudah ada, tidak perlu membuat kolom baru
   if (existingAmountOfLeave) {
-    console.log(
-      `AmountOfLeave for year ${currentYear} already exists for employee ${employeeNik}.`,
-    );
-    return;
+    const responseMessage = `AmountOfLeave for year ${currentYear} already exists.`;
+    console.log(responseMessage);
+
+    return {
+      success: false,
+      message: responseMessage,
+    };
   }
 
   // Mengubah isActive menjadi false untuk year yang berada 2 tahun lalu dari tahun sekarang
@@ -440,7 +443,16 @@ async function updateAmountOfLeaveForActiveEmployees(req, res) {
     for (const employee of activeEmployees) {
       const { nik, typeOfEmployee, startContract, endContract } = employee;
       const isContract = typeOfEmployee?.isContract;
-      await updateAmountOfLeaveForEmployee(nik, isContract, startContract, endContract);
+      const result = await updateAmountOfLeaveForEmployee(
+        nik,
+        isContract,
+        startContract,
+        endContract,
+      );
+      if (result && result.success === false) {
+        // Berikan respons ke client dengan status 400 dan pesan dari fungsi updateAmountOfLeaveForEmployee
+        return res.status(400).json({ message: result.message });
+      }
     }
 
     console.log('Successfully updated amount of leave for active employees.');
