@@ -17,14 +17,35 @@ async function getLeaveHistoryNik(req, res) {
     const { nik } = req.params;
 
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage } = req.query;
+    const { page, perPage, status, typeOfLeave } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
 
+    const filter = {};
+
+    if (status) {
+      if (typeof status === 'string') {
+        filter.status = status.toUpperCase();
+      } else {
+        throw new Error('Invalid status parameter');
+      }
+    }
+
+    if (typeOfLeave) {
+      filter.leave = {
+        typeOfLeave: {
+          name: {
+            contains: typeOfLeave,
+            mode: 'insensitive',
+          },
+        },
+      };
+    }
+
     // Retrieve leave history for the specified employeeNik
     const leaveHistory = await prisma.leaveEmployee.findMany({
-      where: { employeeNik: nik },
+      where: { employeeNik: nik, ...filter },
       orderBy: { updated_at: 'desc' },
       include: {
         employee: {
@@ -73,7 +94,7 @@ async function getLeaveHistoryNik(req, res) {
 
     // Count total leave records for the specified employeeNik
     const total = await prisma.leaveEmployee.count({
-      where: { employeeNik: nik },
+      where: { employeeNik: nik, ...filter },
     });
 
     // Calculate the last page based on total and perPage

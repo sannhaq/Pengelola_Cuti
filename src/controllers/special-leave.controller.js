@@ -96,6 +96,10 @@ async function getSpecialLeaveById(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 async function updateSpecialLeave(req, res) {
   try {
     const { id } = req.params;
@@ -118,6 +122,10 @@ async function updateSpecialLeave(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 async function createSpecialLeave(req, res) {
   try {
     const { leaveTitle, gender, amount, leaveInformation } = req.body;
@@ -137,9 +145,102 @@ async function createSpecialLeave(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function specialLeaveUsers(req, res) {
+  try {
+    const { page, perPage, search, status } = req.query;
+
+    const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
+
+    const filter = {};
+    if (search) {
+      filter.OR = [
+        {
+          employee: {
+            name: { contains: search, mode: 'insensitive' },
+          },
+        },
+        {
+          specialLeave: {
+            leaveTitle: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
+
+    if (status) {
+      if (typeof status === 'string') {
+        filter.status = status.toUpperCase();
+      } else {
+        throw new Error('Invalid status parameter');
+      }
+    }
+
+    const leaveHistory = await prisma.employeeSpecialLeave.findMany({
+      where: filter,
+      orderBy: {
+        updated_at: 'desc',
+      },
+      include: {
+        employee: {
+          select: {
+            nik: true,
+            name: true,
+          },
+        },
+        specialLeave: {
+          select: {
+            leaveTitle: true,
+            amount: true,
+            typeOfLeave: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
+    });
+
+    const totalSpecialLeave = await prisma.employeeSpecialLeave.count({
+      where: filter,
+    });
+
+    const allSpecialLeave = leaveHistory.map((item) => ({
+      id: item.id,
+      ...item.employee,
+      ...item.specialLeave,
+      status: item.status,
+      note: item.note,
+      startLeave: item.startLeave,
+      endLeave: item.endLeave,
+    }));
+
+    return successResponseWithPage(
+      res,
+      'Successfully get all special leave',
+      allSpecialLeave,
+      200,
+      {
+        ...pagination.meta,
+        total: totalSpecialLeave,
+        lastPage: Math.ceil(totalSpecialLeave / perPage),
+      },
+    );
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to get special leave users', null, 500);
+  }
+}
 module.exports = {
   getSpecialLeaveList,
   getSpecialLeaveById,
   updateSpecialLeave,
   createSpecialLeave,
+  specialLeaveUsers,
 };

@@ -77,4 +77,11 @@ router.post(
   specialLeaveController.createSpecialLeave,
 );
 
+// GET all special leave users
+router.get(
+  '/employee-special-leaves',
+  roleMiddleware('Admin'),
+  specialLeaveController.specialLeaveUsers,
+);
+
 module.exports = router;

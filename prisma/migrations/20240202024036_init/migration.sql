@@ -141,6 +141,8 @@ CREATE TABLE "EmployeeSpecialLeave" (
     "employeeNik" TEXT NOT NULL,
     "specialLeaveId" INTEGER NOT NULL,
     "status" "Status" NOT NULL,
+    "startLeave" DATE NOT NULL,
+    "endLeave" DATE NOT NULL,
     "note" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
