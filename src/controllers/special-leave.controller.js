@@ -153,7 +153,7 @@ async function specialLeaveUsers(req, res) {
   try {
     const { page, perPage, search, status } = req.query;
 
-    const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
+    const pagination = await paginate(prisma.employeeSpecialLeave, { page, perPage });
 
     const filter = {};
     if (search) {
@@ -237,10 +237,102 @@ async function specialLeaveUsers(req, res) {
     return errorResponse(res, 'Failed to get special leave users', null, 500);
   }
 }
+
+async function getSpecialLeaveMe(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const { page, perPage } = req.query;
+
+    const userSpecialLeaveInfo = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        employee: {
+          select: {
+            employeeSpecialLeaves: {
+              orderBy: {
+                updated_at: 'desc',
+              },
+              select: {
+                id: true,
+                status: true,
+                specialLeave: {
+                  select: {
+                    id: true,
+                    typeOfLeaveId: true,
+                    typeOfLeave: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                    leaveTitle: true,
+                    gender: true,
+                    amount: true,
+                  },
+                },
+                note: true,
+                startLeave: true,
+                endLeave: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const totalLeaves = userSpecialLeaveInfo.employee.employeeSpecialLeaves.length;
+
+    const pagination = await paginate(prisma.user, { page, perPage, total: totalLeaves });
+
+    const paginatedLeaves = userSpecialLeaveInfo.employee.employeeSpecialLeaves.slice(
+      (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      pagination.meta.currPage * pagination.meta.perPage,
+    );
+
+    const allLeaves = paginatedLeaves.map((item) => ({
+      id: item.id,
+      status: item.status,
+      typeOfLeave: {
+        id: item.specialLeave.typeOfLeaveId,
+        name: item.specialLeave.typeOfLeave.name,
+      },
+      leaveTitle: item.specialLeave.leaveTitle,
+      gender: item.specialLeave.gender,
+      amount: item.specialLeave.amount,
+      note: item.note,
+      startLeave: item.startLeave,
+      endLeave: item.endLeave,
+    }));
+
+    const sanitizedUser = {
+      id: userSpecialLeaveInfo.id,
+      employee: {
+        specialLeave: allLeaves,
+      },
+    };
+
+    // Update total and lastPage in the pagination meta
+    pagination.meta.total = totalLeaves;
+    pagination.meta.lastPage = Math.ceil(totalLeaves / pagination.meta.perPage);
+
+    return successResponseWithPage(
+      res,
+      'Successfully retrieved leave history for the currently logged in user',
+      sanitizedUser,
+      200,
+      pagination.meta,
+    );
+  } catch (e) {
+    console.error(e);
+    return errorResponse(res, 'Failed to get leave history for logged in user', null, 500);
+  }
+}
 module.exports = {
   getSpecialLeaveList,
   getSpecialLeaveById,
   updateSpecialLeave,
   createSpecialLeave,
   specialLeaveUsers,
+  getSpecialLeaveMe,
 };
