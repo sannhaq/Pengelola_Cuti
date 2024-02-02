@@ -305,6 +305,385 @@ async function getMe(req, res) {
   }
 }
 
+async function updateAmountOfLeaveForEmployee(employeeNik, isContract, startContract, endContract) {
+  const currentYear = moment().year();
+  const twoYearsAgo = currentYear - 2;
+
+  // Cek apakah kolom amountOfLeave dengan year tahun sekarang sudah ada
+  const existingAmountOfLeave = await prisma.amountOfLeave.findFirst({
+    where: {
+      employeeNik,
+      year: currentYear,
+    },
+  });
+
+  // Jika sudah ada, tidak perlu membuat kolom baru
+  if (existingAmountOfLeave) {
+    console.log(
+      `AmountOfLeave for year ${currentYear} already exists for employee ${employeeNik}.`,
+    );
+    return;
+  }
+
+  // Mengubah isActive menjadi false untuk year yang berada 2 tahun lalu dari tahun sekarang
+  const amountOfLeaveToUpdate = await prisma.amountOfLeave.findFirst({
+    where: {
+      employeeNik,
+      year: twoYearsAgo,
+    },
+  });
+
+  if (amountOfLeaveToUpdate) {
+    await prisma.amountOfLeave.update({
+      where: {
+        id: amountOfLeaveToUpdate.id,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+    console.log(
+      `Successfully updated isActive to false for AmountOfLeave in year ${twoYearsAgo} for employeeNik ${employeeNik}.`,
+    );
+  } else {
+    console.error('Unable to find a matching amountOfLeave.');
+  }
+
+  let amount = 0;
+
+  console.log('Is Contract:', isContract);
+  if (isContract !== undefined) {
+    if (isContract) {
+      // Jika isContract true, amount diatur menjadi 1
+      amount = 1;
+
+      // Gunakan node-schedule untuk menambahkan 1 setiap bulannya
+      const startContractDate = moment.utc(startContract).date();
+      const rule = new schedule.RecurrenceRule();
+      rule.date = startContractDate;
+      rule.month = new schedule.Range(0, 11);
+
+      schedule.scheduleJob(rule, async () => {
+        console.log('Job is running!');
+        const today = moment.utc();
+        const lastIncrementDate = moment.utc();
+
+        if (!lastIncrementDate.isSame(today, 'month')) {
+          // Jika endContract belum tercapai dan tidak melebihi tahun saat ini, lakukan penambahan
+          if (
+            today.isBefore(moment.utc(endContract)) &&
+            moment.utc(endContract).year() === today.year()
+          ) {
+            console.log(
+              `Incrementing AmountOfLeave for employee ${employeeNik} in year ${currentYear}.`,
+            );
+            await prisma.amountOfLeave.create({
+              data: {
+                amount: {
+                  increment: 1,
+                },
+                year: currentYear,
+                isActive: true,
+                employee: {
+                  connect: {
+                    nik: employeeNik,
+                  },
+                },
+              },
+            });
+          }
+        }
+      });
+    } else {
+      // Jika isContract false, amount diatur menjadi 12
+      amount = 12;
+    }
+  } else {
+    // Jika isContract undefined, atur amount menjadi 0
+    amount = 0;
+    console.log('Is Contract is undefined. Setting amount to 0.');
+  }
+
+  // Buat kolom amountOfLeave baru
+  console.log(
+    `Creating AmountOfLeave for employee ${employeeNik} in year ${currentYear} with amount ${amount}.`,
+  );
+  await prisma.amountOfLeave.create({
+    data: {
+      amount,
+      year: currentYear,
+      isActive: true,
+      employee: {
+        connect: {
+          nik: employeeNik,
+        },
+      },
+    },
+  });
+}
+
+async function updateAmountOfLeaveForActiveEmployees(req, res) {
+  try {
+    const activeEmployees = await prisma.employee.findMany({
+      where: {
+        isWorking: true,
+      },
+      include: {
+        typeOfEmployee: {
+          select: {
+            isContract: true,
+          },
+        },
+      },
+    });
+
+    for (const employee of activeEmployees) {
+      const { nik, typeOfEmployee, startContract, endContract } = employee;
+      const isContract = typeOfEmployee?.isContract;
+      await updateAmountOfLeaveForEmployee(nik, isContract, startContract, endContract);
+    }
+
+    console.log('Successfully updated amount of leave for active employees.');
+    successResponse(res, 'Amount of leave updated successfully.');
+  } catch (error) {
+    console.error('Error updating amount of leave:', error);
+    errorResponse(res, 'Error updating amount of leave.');
+  }
+}
+
+// async function updateAmountOfLeaveForActiveEmployees(req, res) {
+//   try {
+//     const currentYear = moment().year();
+//     const twoYearsAgo = currentYear - 2;
+
+//     // Fetch all active employees
+//     const activeEmployees = await prisma.employee.findMany({
+//       where: {
+//         isWorking: true,
+//       },
+//     });
+
+//     // Iterate through active employees
+//     for (const employee of activeEmployees) {
+//       // Check if amountOfLeave for current year already exists
+//       const existingAmountOfLeave = await prisma.amountOfLeave.findFirst({
+//         where: {
+//           employeeNik: employee.nik,
+//           year: currentYear,
+//         },
+//       });
+
+//       // If already exists, skip creating a new column
+//       if (existingAmountOfLeave) {
+//         console.log(
+//           `AmountOfLeave for year ${currentYear} already exists for employee ${employee.nik}.`,
+//         );
+//         continue;
+//       }
+
+//       // Change isActive to false for the year two years ago
+//       const amountOfLeaveToUpdate = await prisma.amountOfLeave.findMany({
+//         where: {
+//           employee: {
+//             nik: employee.nik,
+//           },
+//           year: twoYearsAgo,
+//         },
+//       });
+
+//       for (const leaveToUpdate of amountOfLeaveToUpdate) {
+//         await prisma.amountOfLeave.update({
+//           where: {
+//             id: leaveToUpdate.id,
+//           },
+//           data: {
+//             isActive: false,
+//           },
+//         });
+//         console.log(
+//           `Successfully updated isActive to false for AmountOfLeave in year ${twoYearsAgo} for employeeNik ${employee.nik}.`,
+//         );
+//       }
+
+//       // Calculate the initial amount based on isContract
+//       let amount = 0;
+//       if (employee.typeOfEmployee && employee.typeOfEmployee.isContract) {
+//         amount = 1;
+//       } else {
+//         amount = 12;
+//       }
+
+//       // Use node-schedule to increment by 1 every month for contract employees
+//       if (amount === 1) {
+//         const startContractDate = moment.utc(employee.typeOfEmployee.startContract).date();
+//         const rule = new schedule.RecurrenceRule();
+//         rule.date = startContractDate;
+//         rule.month = new schedule.Range(0, 11);
+
+//         schedule.scheduleJob(rule, async () => {
+//           const today = moment.utc();
+
+//           if (
+//             employee.isWorking &&
+//             today.isBefore(moment.utc(employee.typeOfEmployee.endContract)) &&
+//             moment.utc(employee.typeOfEmployee.endContract).year() === today.year()
+//           ) {
+//             console.log(
+//               `Incrementing AmountOfLeave for employee ${employee.nik} in year ${currentYear}.`,
+//             );
+//             await prisma.amountOfLeave.create({
+//               data: {
+//                 amount: {
+//                   increment: 1,
+//                 },
+//                 year: currentYear,
+//                 isActive: true,
+//                 employee: {
+//                   connect: {
+//                     nik: employee.nik,
+//                   },
+//                 },
+//               },
+//             });
+//           }
+//         });
+//       }
+
+//       // Create a new amountOfLeave column
+//       console.log(
+//         `Creating AmountOfLeave for employee ${employee.nik} in year ${currentYear} with amount ${amount}.`,
+//       );
+//       await prisma.amountOfLeave.create({
+//         data: {
+//           amount,
+//           year: currentYear,
+//           isActive: true,
+//           employee: {
+//             connect: {
+//               nik: employee.nik,
+//             },
+//           },
+//         },
+//       });
+//     }
+
+//     console.log('Update AmountOfLeave completed successfully.');
+//     successResponse(res, 'Update AmountOfLeave completed successfully.', '', 200);
+//   } catch (error) {
+//     console.error('Error updating AmountOfLeave:', error);
+//     errorResponse(res, 'Error updating AmountOfLeave', '', 500);
+//   }
+// }
+
+async function createOrUpdateAmountOfLeave(employeeNik, isContract, startContract, endContract) {
+  const currentYear = moment().year();
+  const twoYearsAgo = currentYear - 2;
+
+  // Cek apakah kolom amountOfLeave dengan year tahun sekarang sudah ada
+  const existingAmountOfLeave = await prisma.amountOfLeave.findFirst({
+    where: {
+      employeeNik,
+      year: currentYear,
+    },
+  });
+
+  // Jika sudah ada, tidak perlu membuat kolom baru
+  if (existingAmountOfLeave) {
+    console.log(
+      `AmountOfLeave for year ${currentYear} already exists for employee ${employeeNik}.`,
+    );
+    return;
+  }
+
+  // Mengubah isActive menjadi false untuk year yang berada 2 tahun lalu dari tahun sekarang
+  const amountOfLeaveToUpdate = await prisma.amountOfLeave.findFirst({
+    where: {
+      employeeNik,
+      year: twoYearsAgo, // Sesuaikan dengan tahun yang diinginkan
+    },
+  });
+
+  if (amountOfLeaveToUpdate) {
+    await prisma.amountOfLeave.update({
+      where: {
+        id: amountOfLeaveToUpdate.id,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+    console.log(
+      `Successfully updated isActive to false for AmountOfLeave in year ${twoYearsAgo} for employeeNik ${employeeNik}.`,
+    );
+  } else {
+    console.error('Unable to find a matching amountOfLeave.');
+  }
+
+  let amount = 0;
+
+  if (isContract) {
+    // Jika isContract true, amount diatur menjadi 1
+    amount = 1;
+
+    // Gunakan node-schedule untuk menambahkan 1 setiap bulannya
+    const startContractDate = moment.utc(startContract).date();
+    const rule = new schedule.RecurrenceRule();
+    rule.date = startContractDate;
+    rule.month = new schedule.Range(0, 11);
+
+    schedule.scheduleJob(rule, async () => {
+      const today = moment.utc();
+      const lastIncrementDate = moment.utc();
+
+      if (!lastIncrementDate.isSame(today, 'month')) {
+        // Jika endContract belum tercapai dan tidak melebihi tahun saat ini, lakukan penambahan
+        if (
+          today.isBefore(moment.utc(endContract)) &&
+          moment.utc(endContract).year() === today.year()
+        ) {
+          console.log(
+            `Incrementing AmountOfLeave for employee ${employeeNik} in year ${currentYear}.`,
+          );
+          await prisma.amountOfLeave.create({
+            data: {
+              amount: {
+                increment: 1,
+              },
+              year: currentYear,
+              isActive: true,
+              employee: {
+                connect: {
+                  nik: employeeNik,
+                },
+              },
+            },
+          });
+        }
+      }
+    });
+  } else {
+    // Jika isContract false, amount diatur menjadi 12
+    amount = 12;
+  }
+
+  // Buat kolom amountOfLeave baru
+  console.log(
+    `Creating AmountOfLeave for employee ${employeeNik} in year ${currentYear} with amount ${amount}.`,
+  );
+  await prisma.amountOfLeave.create({
+    data: {
+      amount,
+      year: currentYear,
+      isActive: true,
+      employee: {
+        connect: {
+          nik: employeeNik,
+        },
+      },
+    },
+  });
+}
+
 async function updateEmployee(req, res) {
   const employeeNik = req.params.nik;
   const { name, positionId, typeOfEmployee, roleId, gender } = req.body;
@@ -346,6 +725,9 @@ async function updateEmployee(req, res) {
             endContract: typeOfEmployee.isContract
               ? moment.utc(typeOfEmployee.endContract).format()
               : null,
+            startContract: typeOfEmployee.isContract
+              ? moment.utc(typeOfEmployee.startContract).format()
+              : undefined,
           },
         },
         // Jika roleId disediakan dalam body permintaan, perbarui peran
@@ -361,12 +743,35 @@ async function updateEmployee(req, res) {
       };
 
       // Memperbarui data karyawan dengan data yang sudah disiapkan
+      const existingEmployee = await prisma.employee.findUnique({
+        where: {
+          nik: employeeNik,
+        },
+        include: {
+          typeOfEmployee: true,
+        },
+      });
+
+      if (existingEmployee.typeOfEmployee.isContract === false) {
+        // Jika isContract false, pastikan startContract tidak diubah
+        delete updateData.typeOfEmployee.update.startContract;
+      }
+
+      // Memperbarui data karyawan dengan data yang sudah disiapkan
       await prisma.employee.update({
         where: {
           nik: employeeNik,
         },
         data: updateData,
       });
+
+      // Pembaruan atau pembuatan amountOfLeave setelah pembaruan data employee
+      await createOrUpdateAmountOfLeave(
+        employeeNik,
+        typeOfEmployee.isContract,
+        typeOfEmployee.startContract,
+        typeOfEmployee.endContract,
+      );
     } else if (req.user.role.name === 'User') {
       // Update employee name for non-admin user
       await prisma.employee.update({
@@ -378,6 +783,14 @@ async function updateEmployee(req, res) {
           gender,
         },
       });
+
+      // Pembaruan atau pembuatan amountOfLeave setelah pembaruan data employee
+      await createOrUpdateAmountOfLeave(
+        employeeNik,
+        typeOfEmployee.isContract,
+        typeOfEmployee.startContract,
+        typeOfEmployee.endContract,
+      );
     }
 
     return successResponse(res, 'Employee updated successfully', employee, 200);
@@ -689,7 +1102,7 @@ async function addEmployee(req, res) {
               // Jika item belum ada, tambahkan item baru
               amountOfLeaveData.push({
                 amount,
-                year: year,
+                year,
                 isActive: true,
               });
             }
@@ -825,4 +1238,7 @@ module.exports = {
   changePassword,
   resetPassword,
   addEmployee,
+  createOrUpdateAmountOfLeave,
+  calculateAmountOfLeave,
+  updateAmountOfLeaveForActiveEmployees,
 };
