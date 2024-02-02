@@ -3,13 +3,52 @@ const express = require('express');
 const router = express.Router();
 const leaveController = require('../controllers/leave.controller');
 const roleMiddleware = require('../middleware/role.middleware');
-
-//  testing
-router.get('/history/:nik/testing', leaveController.getLeaveHistoryNik);
+const validation = require('../validations/leave.validation');
 
 //  api
-router.get('/mandatory', roleMiddleware('User'), leaveController.mandatoryLeave);
-router.get('/history/me', roleMiddleware('User'), leaveController.getLeaveHistoryMe);
+// GET ALL Mandatory Leave
+router.get('/mandatory', roleMiddleware('User', 'Admin'), leaveController.mandatoryLeave);
+// GET ALL Leave history by user login
+router.get('/history/me', roleMiddleware('User', 'Admin'), leaveController.getLeaveHistoryMe);
+// GET ALL Optional Leave
+router.get('/optional', roleMiddleware('User', 'Admin'), leaveController.optionalLeave);
+// PATCH reject optional leave
+router.patch(
+  '/optional/:id/reject',
+  roleMiddleware('User', 'Admin'),
+  validation.rejectLeave,
+  leaveController.rejectOptionalLeave,
+);
+// GET leave history based on nik
 router.get('/history/:nik', roleMiddleware('Admin'), leaveController.getLeaveHistoryNik);
+// POST optional and mandatory leave
+router.post(
+  '/collective',
+  roleMiddleware('Admin'),
+  validation.collectiveLeaveValidation,
+  leaveController.collectiveLeave,
+);
+// POST personal leave
+router.post(
+  '/personal/:nik',
+  roleMiddleware('Admin'),
+  validation.personalLeaveValidation,
+  leaveController.createPersonalLeave,
+);
+// PATCH accept leave applications from users
+router.patch(
+  '/personal/:id/approve',
+  roleMiddleware('Admin'),
+  leaveController.approvePersonalLeave,
+);
+// PATCH reject the user's leave application
+router.patch(
+  '/personal/:id/reject',
+  roleMiddleware('Admin'),
+  validation.rejectLeave,
+  leaveController.rejectPersonalLeave,
+);
+// GET All leave
+router.get('/all', roleMiddleware('Admin'), leaveController.allLeaves);
 
 module.exports = router;

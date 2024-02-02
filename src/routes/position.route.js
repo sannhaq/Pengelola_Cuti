@@ -5,7 +5,7 @@ const positionController = require('../controllers/position.controller');
 const roleMiddleware = require('../middleware/role.middleware');
 
 // GET All Position
-router.get('/', roleMiddleware('Super Admin', 'Admin'), positionController.getPositions);
+router.get('/', positionController.getPositions);
 
 // GET Position By ID
 router.get('/:id', roleMiddleware('Super Admin', 'Admin'), positionController.getPositionById);

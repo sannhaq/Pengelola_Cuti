@@ -8,6 +8,12 @@ const {
   successResponseWithPage,
 } = require('../utils/helper.util');
 
+/**
+ * Get Positions with Employee Count
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - JSON response with positions and employee count
+ */
 async function getPositions(req, res) {
   try {
     const { page, perPage } = req.query;
@@ -23,14 +29,16 @@ async function getPositions(req, res) {
       take: pagination.meta.perPage,
     });
 
-    // Menambahkan jumlah karyawan dari setiap posisi
+    // Add employee count to each position using Promise.all
     const positionsWithEmployeeCount = await Promise.all(
       positions.map(async (position) => {
+        // Count the number of employees for each position
         const employeeCount = await prisma.employee.count({
           where: {
             positionId: position.id,
           },
         });
+        // Combine position data with employee count
         return {
           ...position,
           employeeCount,
@@ -46,6 +54,7 @@ async function getPositions(req, res) {
       pagination.meta,
     );
   } catch (error) {
+    // Handle error and return error response
     console.error('Error getting positions:', error);
     return errorResponse(
       res,
@@ -56,10 +65,18 @@ async function getPositions(req, res) {
   }
 }
 
+/**
+ * Get Position by ID
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - JSON response with the retrieved position
+ */
 async function getPositionById(req, res) {
+  // Extract position ID from request parameters
   const positionId = parseInt(req.params.id, 10);
 
   try {
+    // Find the position by its unique ID
     const position = await prisma.positions.findUnique({
       where: {
         id: positionId,
@@ -70,12 +87,15 @@ async function getPositionById(req, res) {
       },
     });
 
+    // Check if the position is not found
     if (!position) {
       return errorResponse(res, 'Position not found', '', 404);
     }
 
+    // Return success response with the retrieved position
     return successResponse(res, 'Position retrieved successfully', position, 200);
   } catch (error) {
+    // Handle error and return error response
     console.error('Failed to get position:', error);
     return errorResponse(
       res,
@@ -86,18 +106,28 @@ async function getPositionById(req, res) {
   }
 }
 
+/**
+ * Create a new Position
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - JSON response with the newly created position
+ */
 async function createPosition(req, res) {
+  // Extract position name from request body
   const { name } = req.body;
 
   try {
+    // Create a new position in the database
     const newPosition = await prisma.positions.create({
       data: {
         name,
       },
     });
 
+    // Return success response with the newly created position
     return successResponse(res, 'Position created successfully', newPosition, 201);
   } catch (error) {
+    // Handle error and return error response
     console.error('Failed to create position:', error);
     return errorResponse(
       res,
@@ -108,11 +138,19 @@ async function createPosition(req, res) {
   }
 }
 
+/**
+ * Update an existing Position by ID
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - JSON response with the updated position
+ */
 async function updatePosition(req, res) {
+  // Extract position ID and updated name from request parameters and body
   const positionId = parseInt(req.params.id, 10);
   const { name } = req.body;
 
   try {
+    // Update the position in the database
     const updatedPosition = await prisma.positions.update({
       where: {
         id: positionId,
@@ -122,8 +160,10 @@ async function updatePosition(req, res) {
       },
     });
 
+    // Return success response with the updated position
     return successResponse(res, 'Position updated successfully', updatedPosition, 200);
   } catch (error) {
+    // Handle error and return error response
     console.error('Failed to update position:', error);
     return errorResponse(
       res,
@@ -134,7 +174,14 @@ async function updatePosition(req, res) {
   }
 }
 
+/**
+ * Delete a Position by ID, if no employees are using it
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - JSON response indicating success or failure
+ */
 async function deletePosition(req, res) {
+  // Extract position ID from request parameters
   const positionId = parseInt(req.params.id, 10);
 
   try {
@@ -145,8 +192,8 @@ async function deletePosition(req, res) {
       },
     });
 
+    // If there are employees using the position, prevent deletion and return an error response
     if (employeesUsingPosition.length > 0) {
-      // Jika ada karyawan yang menggunakan posisi, kirim respons bahwa posisi tidak dapat dihapus
       return errorResponse(
         res,
         'Position cannot be deleted as it is still in use by employees',
@@ -155,15 +202,17 @@ async function deletePosition(req, res) {
       );
     }
 
-    // Jika tidak ada karyawan yang menggunakan posisi, lanjutkan dengan menghapus posisi
+    // If no employees are using the position, proceed with deleting the position
     await prisma.positions.delete({
       where: {
         id: positionId,
       },
     });
 
+    // Return success response with an empty object
     return successResponse(res, 'Position deleted successfully', {}, 200);
   } catch (error) {
+    // Handle error and return error response
     console.error('Failed to delete position:', error);
     return errorResponse(
       res,
