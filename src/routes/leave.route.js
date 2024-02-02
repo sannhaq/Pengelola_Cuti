@@ -20,6 +20,12 @@ router.patch(
   validation.rejectLeave,
   leaveController.rejectOptionalLeave,
 );
+// GET Special ;eave history by login
+router.get(
+  '/employee-special-leave/history/me',
+  roleMiddleware('User', 'Admin'),
+  specialLeaveController.getSpecialLeaveMe,
+);
 // GET leave history based on nik
 router.get('/history/:nik', roleMiddleware('Admin'), leaveController.getLeaveHistoryNik);
 // POST optional and mandatory leave
