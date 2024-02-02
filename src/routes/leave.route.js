@@ -84,4 +84,10 @@ router.get(
   specialLeaveController.specialLeaveUsers,
 );
 
+router.get(
+  '/employee-special-leave/history/:nik',
+  roleMiddleware('Admin'),
+  specialLeaveController.getSpecialLeaveByNik,
+);
+
 module.exports = router;
