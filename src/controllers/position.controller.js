@@ -1,7 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
-const { errorResponse, successResponse } = require('../utils/helper.util');
+const {
+  errorResponse,
+  successResponse,
+  paginate,
+  successResponseWithPage,
+} = require('../utils/helper.util');
 
 /**
  * Get Positions with Employee Count
@@ -11,12 +16,17 @@ const { errorResponse, successResponse } = require('../utils/helper.util');
  */
 async function getPositions(req, res) {
   try {
-    // Retrieve positions with selected fields (id, name)
+    const { page, perPage } = req.query;
+
+    const pagination = await paginate(prisma.positions, { page, perPage });
+
     const positions = await prisma.positions.findMany({
       select: {
         id: true,
         name: true,
       },
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
     });
 
     // Add employee count to each position using Promise.all
@@ -36,12 +46,12 @@ async function getPositions(req, res) {
       }),
     );
 
-    // Return success response with positions and employee count
-    return successResponse(
+    return successResponseWithPage(
       res,
       'Successfully retrieved positions',
       positionsWithEmployeeCount,
       200,
+      pagination.meta,
     );
   } catch (error) {
     // Handle error and return error response

@@ -66,6 +66,12 @@ router.get(
   roleMiddleware('Admin'),
   specialLeaveController.getSpecialLeaveById,
 );
+// GET special leave by nik
+router.get(
+  '/special-leave/:nik',
+  roleMiddleware('Admin'),
+  specialLeaveController.getSpecialLeaveByNik,
+);
 
 // PATCH special leave
 router.patch(

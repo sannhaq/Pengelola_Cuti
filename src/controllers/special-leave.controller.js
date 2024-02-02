@@ -427,6 +427,35 @@ async function getSpecialLeaveMe(req, res) {
   }
 }
 
+async function getSpecialLeaveByNik(req, res) {
+  try {
+    const { nik } = req.params;
+
+    const specialLeave = await prisma.specialLeave.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+      select: {
+        id: true,
+        leaveTitle: true,
+        gender: true,
+        amount: true,
+        leaveInformation: true,
+        typeOfLeave: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+    return successResponse(res, 'Successfully get special leave by nik', specialLeave, 200);
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to get special leave by nik', null, 500);
+  }
+}
+
 module.exports = {
   getSpecialLeaveList,
   getSpecialLeaveById,
@@ -435,4 +464,5 @@ module.exports = {
   specialLeaveUsers,
   getSpecialLeaveByNik,
   getSpecialLeaveMe,
+  getSpecialLeaveByNik,
 };
