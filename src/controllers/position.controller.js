@@ -1,15 +1,26 @@
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
-const { errorResponse, successResponse } = require('../utils/helper.util');
+const {
+  errorResponse,
+  successResponse,
+  paginate,
+  successResponseWithPage,
+} = require('../utils/helper.util');
 
 async function getPositions(req, res) {
   try {
+    const { page, perPage } = req.query;
+
+    const pagination = await paginate(prisma.positions, { page, perPage });
+
     const positions = await prisma.positions.findMany({
       select: {
         id: true,
         name: true,
       },
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
     });
 
     // Menambahkan jumlah karyawan dari setiap posisi
@@ -27,11 +38,12 @@ async function getPositions(req, res) {
       }),
     );
 
-    return successResponse(
+    return successResponseWithPage(
       res,
       'Successfully retrieved positions',
       positionsWithEmployeeCount,
       200,
+      pagination.meta,
     );
   } catch (error) {
     console.error('Error getting positions:', error);
