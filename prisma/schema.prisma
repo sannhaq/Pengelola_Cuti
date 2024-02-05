@@ -17,12 +17,12 @@ enum Status {
 }
 
 model Role {
-  id         Int        @id @default(autoincrement())
-  name       String
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
-  users      User[]
-  rolePages  RolePage[]
+  id             Int              @id @default(autoincrement())
+  name           String
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
+  users          User[]
+  rolePermission RolePermission[]
 }
 
 model User {
@@ -106,17 +106,17 @@ model LeaveEmployee {
   status      Status   @default(WAITING)
 }
 
-model Page {
-  id         Int        @id @default(autoincrement())
-  name       String
-  created_at DateTime   @default(now())
-  rolePages  RolePage[]
+model Permission {
+  id             Int              @id @default(autoincrement())
+  name           String
+  created_at     DateTime         @default(now())
+  rolePermission RolePermission[]
 }
 
-model RolePage {
-  id     Int  @id @default(autoincrement())
-  roleId Int
-  pageId Int
-  role   Role @relation(fields: [roleId], references: [id])
-  page   Page @relation(fields: [pageId], references: [id])
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permisiionId Int
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permisiionId], references: [id])
 }

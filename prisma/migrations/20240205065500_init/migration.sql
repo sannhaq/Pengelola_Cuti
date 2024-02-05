@@ -102,21 +102,21 @@ CREATE TABLE "LeaveEmployee" (
 );
 
 -- CreateTable
-CREATE TABLE "Page" (
+CREATE TABLE "Permission" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "Page_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Permission_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "RolePage" (
+CREATE TABLE "RolePermission" (
     "id" SERIAL NOT NULL,
     "roleId" INTEGER NOT NULL,
-    "pageId" INTEGER NOT NULL,
+    "permisiionId" INTEGER NOT NULL,
 
-    CONSTRAINT "RolePage_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "RolePermission_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -153,7 +153,7 @@ ALTER TABLE "LeaveEmployee" ADD CONSTRAINT "LeaveEmployee_leaveId_fkey" FOREIGN 
 ALTER TABLE "LeaveEmployee" ADD CONSTRAINT "LeaveEmployee_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RolePage" ADD CONSTRAINT "RolePage_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RolePage" ADD CONSTRAINT "RolePage_pageId_fkey" FOREIGN KEY ("pageId") REFERENCES "Page"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_permisiionId_fkey" FOREIGN KEY ("permisiionId") REFERENCES "Permission"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
