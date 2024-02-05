@@ -1,4 +1,4 @@
-const { prisma } = require('./config')
+const { prisma } = require('./config');
 
 const typeOfLeaves = [
   {
@@ -16,14 +16,19 @@ const typeOfLeaves = [
     created_at: new Date(),
     updated_at: new Date(),
   },
-]
+  {
+    name: 'Special',
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+];
 
 async function typeOfLeaveSeed() {
   for (let typeOfLeave of typeOfLeaves) {
     await prisma.typeOfLeave.create({
       data: typeOfLeave,
-    })
+    });
   }
 }
 
-module.exports = { typeOfLeaveSeed }
+module.exports = { typeOfLeaveSeed };

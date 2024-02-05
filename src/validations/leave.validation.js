@@ -26,7 +26,43 @@ const personalLeaveValidation = validate({
 
 const rejectLeave = validate({
   note: z.string().refine((data) => data.trim() !== '', {
-    message: 'Reason cannot be empty',
+    message: 'Note cannot be empty',
   }),
 });
-module.exports = { collectiveLeaveValidation, personalLeaveValidation, rejectLeave };
+
+const updateSpecialLeave = validate({
+  leaveTitle: z.string().optional(),
+  gender: z.enum(['L', 'P', 'LP']).optional(),
+  amount: z.coerce.number().optional(),
+  leaveInformation: z.string().optional(),
+});
+
+const createSpecialLeave = validate({
+  leaveTitle: z.string(),
+  gender: z.enum(['L', 'P', 'LP']),
+  amount: z.coerce.number(),
+  leaveInformation: z.string(),
+});
+
+const createEmployeeSpecialLeave = validate({
+  specialLeaveId: z.coerce.number().refine(recordExist('specialLeave', 'id'), {
+    message: 'Special Leave does not exist',
+  }),
+  startLeave: z.coerce.date(),
+});
+
+const rejectSpecialLeave = validate({
+  note: z.string().refine((data) => data.trim() !== '', {
+    message: 'Note cannot be empty',
+  }),
+});
+
+module.exports = {
+  collectiveLeaveValidation,
+  personalLeaveValidation,
+  rejectLeave,
+  updateSpecialLeave,
+  createSpecialLeave,
+  createEmployeeSpecialLeave,
+  rejectSpecialLeave,
+};

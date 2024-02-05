@@ -10,7 +10,6 @@ const {
   sum,
   updateLeaveAmount,
 } = require('../utils/helper.util');
-const { meta } = require('eslint-plugin-prettier');
 
 async function getLeaveHistoryNik(req, res) {
   try {
@@ -18,14 +17,35 @@ async function getLeaveHistoryNik(req, res) {
     const { nik } = req.params;
 
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage } = req.query;
+    const { page, perPage, status, typeOfLeave } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
 
+    const filter = {};
+
+    if (status) {
+      if (typeof status === 'string') {
+        filter.status = status.toUpperCase();
+      } else {
+        throw new Error('Invalid status parameter');
+      }
+    }
+
+    if (typeOfLeave) {
+      filter.leave = {
+        typeOfLeave: {
+          name: {
+            contains: typeOfLeave,
+            mode: 'insensitive',
+          },
+        },
+      };
+    }
+
     // Retrieve leave history for the specified employeeNik
     const leaveHistory = await prisma.leaveEmployee.findMany({
-      where: { employeeNik: nik },
+      where: { employeeNik: nik, ...filter },
       orderBy: { updated_at: 'desc' },
       include: {
         employee: {
@@ -74,7 +94,7 @@ async function getLeaveHistoryNik(req, res) {
 
     // Count total leave records for the specified employeeNik
     const total = await prisma.leaveEmployee.count({
-      where: { employeeNik: nik },
+      where: { employeeNik: nik, ...filter },
     });
 
     // Calculate the last page based on total and perPage
@@ -361,7 +381,7 @@ async function collectiveLeave(req, res) {
         user: {
           role: {
             id: {
-              in: [2, 3],
+              not: 1,
             },
           },
         },
@@ -540,7 +560,7 @@ async function rejectOptionalLeave(req, res) {
     });
 
     if (rejectStatus.status === 'REJECT') {
-      return errorResponse(res, 'Leave status is already REJECT', null, 400);
+      return errorResponse(res, 'Leave status is already REJECT', null, 409);
     }
 
     // Update the leave status to 'REJECT'
@@ -735,7 +755,7 @@ async function approvePersonalLeave(req, res) {
 
     // Check if the leave status is already APPROVE
     if (leaveEmployeeInfo.status === 'APPROVE') {
-      return errorResponse(res, 'Leave status is already APPROVE', null, 400);
+      return errorResponse(res, 'Leave status is already APPROVE', null, 409);
     }
 
     // Update the leaveEmployee status to APPROVE
@@ -803,7 +823,7 @@ async function rejectPersonalLeave(req, res) {
 
     // Check if the leave status is already REJECTED
     if (leaveEmployeeInfo.status === 'REJECT') {
-      return errorResponse(res, 'Leave status is already REJECTED', null, 400);
+      return errorResponse(res, 'Leave status is already REJECTED', null, 409);
     }
 
     // Update the leaveEmployee status to REJECT
@@ -837,6 +857,10 @@ async function rejectPersonalLeave(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 async function allLeaves(req, res) {
   try {
     // Extract query parameters from the request
@@ -931,14 +955,9 @@ async function allLeaves(req, res) {
     }));
 
     return successResponseWithPage(res, 'Successfully get all leave history', allLeave, 200, {
+      ...pagination.meta,
       total: totalLeaves, // Total leaves based on the applied filters
       lastPage: Math.ceil(totalLeaves / perPage), // Calculate lastPage based on total and perPage
-      currPage: pagination.meta.currPage,
-      perPage: pagination.meta.perPage,
-      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
-      take: pagination.meta.perPage,
-      prev: pagination.meta.prev,
-      next: pagination.meta.next,
     });
   } catch (e) {
     console.log(e);
