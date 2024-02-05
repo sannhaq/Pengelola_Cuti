@@ -66,11 +66,11 @@ router.get(
   roleMiddleware('Admin'),
   specialLeaveController.getSpecialLeaveById,
 );
-// GET special leave by nik
+// GET special leave by matching gender
 router.get(
-  '/special-leave/:nik',
+  '/special-leave/gender/:nik',
   roleMiddleware('Admin'),
-  specialLeaveController.getSpecialLeaveByNik,
+  specialLeaveController.getSpecialLeaveByNikGender,
 );
 
 // PATCH special leave
@@ -96,10 +96,33 @@ router.get(
   specialLeaveController.specialLeaveUsers,
 );
 
+// GET special leave by nik
 router.get(
   '/employee-special-leave/history/:nik',
   roleMiddleware('Admin'),
   specialLeaveController.getSpecialLeaveByNik,
 );
 
+// set employee special leave
+router.post(
+  '/employee-special-leave/:nik',
+  roleMiddleware('Admin'),
+  validation.createEmployeeSpecialLeave,
+  specialLeaveController.setSpecialLeave,
+);
+
+// approve special leave
+router.patch(
+  '/employee-special-leave/:id/approve',
+  roleMiddleware('Admin'),
+  specialLeaveController.approveSpecialLeave,
+);
+
+// reject special leave
+router.patch(
+  '/employee-special-leave/:id/reject',
+  roleMiddleware('Admin'),
+  validation.rejectSpecialLeave,
+  specialLeaveController.rejectSpecialLeave,
+);
 module.exports = router;

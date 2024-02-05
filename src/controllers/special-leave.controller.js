@@ -1,3 +1,4 @@
+const { date } = require('zod');
 const { prisma } = require('../configs/prisma.config');
 const {
   successResponseWithPage,
@@ -336,6 +337,10 @@ async function getSpecialLeaveByNik(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 async function getSpecialLeaveMe(req, res) {
   try {
     const userId = req.user.id;
@@ -427,13 +432,29 @@ async function getSpecialLeaveMe(req, res) {
   }
 }
 
-async function getSpecialLeaveByNik(req, res) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function getSpecialLeaveByNikGender(req, res) {
   try {
     const { nik } = req.params;
 
-    const specialLeave = await prisma.specialLeave.findUnique({
+    const employee = await prisma.employee.findUnique({
+      where: { nik },
+      select: { gender: true },
+    });
+
+    if (!employee) {
+      return errorResponse(res, 'Employee not found', null, 404);
+    }
+
+    const specialLeave = await prisma.specialLeave.findMany({
       where: {
-        id: parseInt(id),
+        OR: [{ gender: employee.gender }, { gender: 'LP' }],
+      },
+      orderBy: {
+        gender: 'asc',
       },
       select: {
         id: true,
@@ -456,6 +477,140 @@ async function getSpecialLeaveByNik(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function setSpecialLeave(req, res) {
+  try {
+    const { nik } = req.params;
+    const { specialLeaveId, startLeave } = req.body;
+
+    const employee = await prisma.employee.findUnique({
+      where: {
+        nik: nik,
+      },
+      select: {
+        gender: true,
+      },
+    });
+
+    const specialLeave = await prisma.specialLeave.findUnique({
+      where: {
+        id: parseInt(specialLeaveId),
+        OR: [{ gender: employee.gender }, { gender: 'LP' }],
+      },
+      select: {
+        amount: true,
+      },
+    });
+
+    if (!specialLeave) {
+      return errorResponse(
+        res,
+        'Special leave not found or does not match employee gender',
+        null,
+        404,
+      );
+    }
+
+    const setEndLeave = (date, days) => {
+      let countedDays = 0;
+      let currentDate = new Date(date.getTime());
+
+      while (countedDays < days) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+          countedDays++;
+        }
+      }
+
+      return currentDate;
+    };
+
+    const setSpecialLeave = await prisma.employeeSpecialLeave.create({
+      data: {
+        employeeNik: nik,
+        specialLeaveId,
+        startLeave,
+        endLeave: setEndLeave(startLeave, specialLeave.amount - 1),
+      },
+    });
+
+    return successResponse(res, 'Successfully set the special leave', setSpecialLeave);
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to set special leave ', null, 500);
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function approveSpecialLeave(req, res) {
+  try {
+    const { id } = req.params;
+
+    const specialLeaveInfo = await prisma.employeeSpecialLeave.findUnique({
+      where: { id: parseInt(id) },
+      select: {
+        status: true,
+      },
+    });
+
+    if (specialLeaveInfo.status === 'APPROVE') {
+      return errorResponse(res, 'Special leave is already APPROVE', null, 409);
+    }
+
+    const approveSpecialLeave = await prisma.employeeSpecialLeave.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: 'APPROVE',
+        note: null,
+      },
+    });
+
+    return successResponse(res, 'Successfully approved special leave', approveSpecialLeave);
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to approve special leave', null, 500);
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function rejectSpecialLeave(req, res) {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+
+    const specialLeaveInfo = await prisma.employeeSpecialLeave.findUnique({
+      where: { id: parseInt(id) },
+      select: {
+        status: true,
+      },
+    });
+
+    if (specialLeaveInfo.status === 'REJECT') {
+      return errorResponse(res, 'Special leave is already rejected', null, 409);
+    }
+
+    const rejectSpecialLeave = await prisma.employeeSpecialLeave.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: 'REJECT',
+        note,
+      },
+    });
+
+    return successResponse(res, 'Successfully rejected special leave', rejectSpecialLeave);
+  } catch (e) {
+    return errorResponse(res, 'Failed to reject special leave', null, 500);
+  }
+}
 module.exports = {
   getSpecialLeaveList,
   getSpecialLeaveById,
@@ -464,5 +619,8 @@ module.exports = {
   specialLeaveUsers,
   getSpecialLeaveByNik,
   getSpecialLeaveMe,
-  getSpecialLeaveByNik,
+  getSpecialLeaveByNikGender,
+  setSpecialLeave,
+  approveSpecialLeave,
+  rejectSpecialLeave,
 };

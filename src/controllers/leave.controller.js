@@ -560,7 +560,7 @@ async function rejectOptionalLeave(req, res) {
     });
 
     if (rejectStatus.status === 'REJECT') {
-      return errorResponse(res, 'Leave status is already REJECT', null, 400);
+      return errorResponse(res, 'Leave status is already REJECT', null, 409);
     }
 
     // Update the leave status to 'REJECT'
@@ -755,7 +755,7 @@ async function approvePersonalLeave(req, res) {
 
     // Check if the leave status is already APPROVE
     if (leaveEmployeeInfo.status === 'APPROVE') {
-      return errorResponse(res, 'Leave status is already APPROVE', null, 400);
+      return errorResponse(res, 'Leave status is already APPROVE', null, 409);
     }
 
     // Update the leaveEmployee status to APPROVE
@@ -823,7 +823,7 @@ async function rejectPersonalLeave(req, res) {
 
     // Check if the leave status is already REJECTED
     if (leaveEmployeeInfo.status === 'REJECT') {
-      return errorResponse(res, 'Leave status is already REJECTED', null, 400);
+      return errorResponse(res, 'Leave status is already REJECTED', null, 409);
     }
 
     // Update the leaveEmployee status to REJECT

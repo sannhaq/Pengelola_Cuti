@@ -140,7 +140,7 @@ CREATE TABLE "EmployeeSpecialLeave" (
     "id" SERIAL NOT NULL,
     "employeeNik" TEXT NOT NULL,
     "specialLeaveId" INTEGER NOT NULL,
-    "status" "Status" NOT NULL,
+    "status" "Status" NOT NULL DEFAULT 'WAITING',
     "startLeave" DATE NOT NULL,
     "endLeave" DATE NOT NULL,
     "note" TEXT,

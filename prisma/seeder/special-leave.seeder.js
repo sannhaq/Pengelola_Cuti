@@ -9,11 +9,11 @@ const specials = [
     leaveInformation: 'Maternity leave for mothers after childbirth.',
   },
   {
-    leaveTitle: 'Paternity Leave',
+    leaveTitle: 'Accompanying wife in childbirth',
     gender: 'L',
     amount: 2,
     typeOfLeaveId: 4,
-    leaveInformation: 'Paternity leave for fathers to accompany their wives during childbirth.',
+    leaveInformation: 'Leave for fathers to accompany their wives during childbirth.',
   },
   {
     leaveTitle: 'Miscarriage Leave',

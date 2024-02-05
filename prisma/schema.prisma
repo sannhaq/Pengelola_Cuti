@@ -152,7 +152,7 @@ model EmployeeSpecialLeave {
   employeeNik    String
   specialLeave   SpecialLeave @relation(fields: [specialLeaveId], references: [id])
   specialLeaveId Int
-  status         Status
+  status         Status       @default(WAITING)
   startLeave     DateTime     @db.Date
   endLeave       DateTime     @db.Date
   note           String?
