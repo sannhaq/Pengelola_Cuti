@@ -2,28 +2,24 @@ const express = require('express');
 
 const router = express.Router();
 const positionController = require('../controllers/position.controller');
-const roleMiddleware = require('../middleware/role.middleware');
+const checkPermission = require('../middleware/checkPermission.middleware');
 
 // GET All Position
-router.get('/', positionController.getPositions);
+router.get('/', checkPermission('Positions'), positionController.getPositions);
 
 // GET Position By ID
-router.get('/:id', roleMiddleware('Super Admin', 'Admin'), positionController.getPositionById);
+router.get('/:id', positionController.getPositionById);
 
 // POST Create Positions
-router.post('/create', roleMiddleware('Super Admin', 'Admin'), positionController.createPosition);
+router.post('/create', checkPermission('Add Positions'), positionController.createPosition);
 
 // PUT Update Positions
-router.put(
-  '/update/:id',
-  roleMiddleware('Super Admin', 'Admin'),
-  positionController.updatePosition,
-);
+router.put('/update/:id', checkPermission('Update Positions'), positionController.updatePosition);
 
 // DELETE Positions
 router.delete(
   '/delete/:id',
-  roleMiddleware('Super Admin', 'Admin'),
+  checkPermission('Delete Positions'),
   positionController.deletePosition,
 );
 

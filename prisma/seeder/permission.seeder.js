@@ -116,6 +116,76 @@ const permissions = [
     name: 'Reject Optional Leave',
     created_at: new Date(),
   },
+  {
+    // 21
+    name: 'Update Amount Of Leave',
+    created_at: new Date(),
+  },
+  {
+    // 22
+    name: 'View Special Leave History',
+    created_at: new Date(),
+  },
+  {
+    // 23
+    name: 'View Leave History by Employee ID',
+    created_at: new Date(),
+  },
+  {
+    // 24
+    name: 'Create Collective Leave',
+    created_at: new Date(),
+  },
+  {
+    // 25
+    name: 'Create Personal Leave',
+    created_at: new Date(),
+  },
+  {
+    // 26
+    name: 'Approve and Reject Personal Leave',
+    created_at: new Date(),
+  },
+  {
+    // 27
+    name: 'View All Leave History',
+    created_at: new Date(),
+  },
+  {
+    // 28
+    name: 'View All Special Leave History',
+    created_at: new Date(),
+  },
+  {
+    // 29
+    name: 'Update Special Leave',
+    created_at: new Date(),
+  },
+  {
+    // 30
+    name: 'Create Special Leave',
+    created_at: new Date(),
+  },
+  {
+    // 31
+    name: 'View All Employee Special Leaves',
+    created_at: new Date(),
+  },
+  {
+    // 32
+    name: 'View Employee Special Leave History by NIK',
+    created_at: new Date(),
+  },
+  {
+    // 33
+    name: 'Set Employee Special Leave',
+    created_at: new Date(),
+  },
+  {
+    // 34
+    name: 'Approve and Reject Employee Special Leave',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {
