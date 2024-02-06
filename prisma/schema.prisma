@@ -17,12 +17,12 @@ enum Status {
 }
 
 model Role {
-  id             Int              @id @default(autoincrement())
-  name           String
-  created_at     DateTime         @default(now())
-  updated_at     DateTime         @updatedAt
-  users          User[]
-  rolePermission RolePermission[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+  users           User[]
+  rolePermissions RolePermission[]
 }
 
 model User {
@@ -116,7 +116,7 @@ model Permission {
 model RolePermission {
   id           Int        @id @default(autoincrement())
   roleId       Int
-  permisiionId Int
+  permissionId Int
   role         Role       @relation(fields: [roleId], references: [id])
-  permission   Permission @relation(fields: [permisiionId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
 }
