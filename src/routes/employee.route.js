@@ -4,6 +4,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const employeeController = require('../controllers/employee.controller');
 const roleMiddleware = require('../middleware/role.middleware');
+const checkPermission = require('../middleware/checkPermission.middleware');
 const auth = require('../middleware/auth.middleware');
 const {
   addEmmployeeInputValidation,
@@ -11,7 +12,7 @@ const {
 } = require('../validations/employee/Employee.validation');
 
 // GET All Employee
-router.get('/', roleMiddleware('Super Admin', 'Admin'), employeeController.getAll);
+router.get('/', checkPermission('Dashboard'), employeeController.getAll);
 
 // GET Employee detail By NIK
 router.get('/detail/:nik', employeeController.getNIK);
