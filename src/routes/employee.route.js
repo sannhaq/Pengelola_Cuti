@@ -52,4 +52,11 @@ router.post(
   employeeController.addEmployee,
 );
 
+// POST AmountOfLeave
+router.post(
+  '/update-amount-of-leave',
+  roleMiddleware('Super Admin', 'Admin'),
+  employeeController.updateAmountOfLeaveForActiveEmployees,
+);
+
 module.exports = router;
