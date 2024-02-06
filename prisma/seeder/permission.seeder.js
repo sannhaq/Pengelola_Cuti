@@ -97,13 +97,23 @@ const permissions = [
     created_at: new Date(),
   },
   {
-    //6
+    // 17
     name: 'View Mandatory Leave',
     created_at: new Date(),
   },
   {
-    //7
+    // 18
     name: 'Get Leave History for Current User',
+    created_at: new Date(),
+  },
+  {
+    // 19
+    name: 'View Optional Leave',
+    created_at: new Date(),
+  },
+  {
+    // 20
+    name: 'Reject Optional Leave',
     created_at: new Date(),
   },
 ];

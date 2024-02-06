@@ -72,15 +72,56 @@ const rolePermissions = [
     roleId: 3,
     permissionId: 5,
   },
+
+  // 13
   {
-    //6
     roleId: 2,
-    permissionId: 6,
+    permissionId: 15,
+  },
+  // 14
+  {
+    roleId: 2,
+    permissionId: 16,
   },
   {
-    //6
+    // 17
+    roleId: 2,
+    permissionId: 17,
+  },
+  {
+    // 17
     roleId: 3,
-    permissionId: 6,
+    permissionId: 17,
+  },
+  {
+    // 18
+    roleId: 2,
+    permissionId: 18,
+  },
+  {
+    // 18
+    roleId: 3,
+    permissionId: 18,
+  },
+  {
+    // 19
+    roleId: 2,
+    permissionId: 19,
+  },
+  {
+    // 19
+    roleId: 3,
+    permissionId: 19,
+  },
+  {
+    // 20
+    roleId: 2,
+    permissionId: 20,
+  },
+  {
+    // 20
+    roleId: 3,
+    permissionId: 20,
   },
 ];
 

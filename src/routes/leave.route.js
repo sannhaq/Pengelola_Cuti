@@ -11,17 +11,21 @@ const specialLeaveController = require('../controllers/special-leave.controller'
 // GET ALL Mandatory Leave
 router.get('/mandatory', checkPermission('View Mandatory Leave'), leaveController.mandatoryLeave);
 // GET ALL Leave history by user login
-router.get('/history/me', roleMiddleware('User', 'Admin'), leaveController.getLeaveHistoryMe);
+router.get(
+  '/history/me',
+  checkPermission('Get Leave History for Current User'),
+  leaveController.getLeaveHistoryMe,
+);
 // GET ALL Optional Leave
-router.get('/optional', roleMiddleware('User', 'Admin'), leaveController.optionalLeave);
+router.get('/optional', checkPermission('View Optional Leave'), leaveController.optionalLeave);
 // PATCH reject optional leave
 router.patch(
   '/optional/:id/reject',
-  roleMiddleware('User', 'Admin'),
+  checkPermission('Reject Optional Leave'),
   validation.rejectLeave,
   leaveController.rejectOptionalLeave,
 );
-// GET Special ;eave history by login
+// GET Special leave history by login
 router.get(
   '/employee-special-leave/history/me',
   roleMiddleware('User', 'Admin'),

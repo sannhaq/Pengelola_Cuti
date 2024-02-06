@@ -12,7 +12,7 @@ const {
 } = require('../validations/employee/Employee.validation');
 
 // GET All Employee
-router.get('/', checkPermission('Dashboard'), employeeController.getAll);
+router.get('/', checkPermission('Get Employee'), employeeController.getAll);
 
 // GET Employee detail By NIK
 router.get('/detail/:nik', employeeController.getNIK);
