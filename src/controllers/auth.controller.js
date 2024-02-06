@@ -55,7 +55,7 @@ async function login(req, res) {
 
   // Generate access token
   const accessToken = jwt.sign({}, config.secret, {
-    expiresIn: '15m',
+    expiresIn: '1m',
     subject: user.id.toString(),
   });
 
@@ -110,7 +110,7 @@ async function refresh(req, res) {
 
   // Generate a new access token
   const accessToken = jwt.sign({}, config.secret, {
-    expiresIn: '15m',
+    expiresIn: '1m',
     subject: newRefreshToken.userId.toString(),
   });
 

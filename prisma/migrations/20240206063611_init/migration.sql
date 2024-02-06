@@ -1,6 +1,12 @@
 -- CreateEnum
 CREATE TYPE "Status" AS ENUM ('APPROVE', 'WAITING', 'REJECT');
 
+-- CreateEnum
+CREATE TYPE "Gender" AS ENUM ('L', 'P');
+
+-- CreateEnum
+CREATE TYPE "GenderSpecialLeave" AS ENUM ('L', 'P', 'LP');
+
 -- CreateTable
 CREATE TABLE "Role" (
     "id" SERIAL NOT NULL,
@@ -51,13 +57,26 @@ CREATE TABLE "Employee" (
     "positionId" INTEGER NOT NULL,
     "historicalName" TEXT NOT NULL,
     "historicalNik" TEXT NOT NULL,
-    "amountOfLeave" INTEGER NOT NULL,
+    "gender" "Gender" NOT NULL,
     "userId" INTEGER NOT NULL,
     "typeOfEmployeeId" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Employee_pkey" PRIMARY KEY ("nik")
+);
+
+-- CreateTable
+CREATE TABLE "AmountOfLeave" (
+    "id" SERIAL NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
+    "isActive" BOOLEAN NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AmountOfLeave_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -97,8 +116,49 @@ CREATE TABLE "LeaveEmployee" (
     "leaveId" INTEGER NOT NULL,
     "employeeNik" TEXT NOT NULL,
     "status" "Status" NOT NULL DEFAULT 'WAITING',
+    "note" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "LeaveEmployee_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SpecialLeave" (
+    "id" SERIAL NOT NULL,
+    "leaveTitle" TEXT NOT NULL,
+    "gender" "GenderSpecialLeave" NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "typeOfLeaveId" INTEGER NOT NULL,
+    "leaveInformation" TEXT NOT NULL,
+
+    CONSTRAINT "SpecialLeave_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmployeeSpecialLeave" (
+    "id" SERIAL NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "specialLeaveId" INTEGER NOT NULL,
+    "status" "Status" NOT NULL DEFAULT 'WAITING',
+    "startLeave" DATE NOT NULL,
+    "endLeave" DATE NOT NULL,
+    "note" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmployeeSpecialLeave_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DeductedLeave" (
+    "id" SERIAL NOT NULL,
+    "leaveId" INTEGER NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "previousYearDeduct" INTEGER,
+    "currentYearDeduct" INTEGER,
+
+    CONSTRAINT "DeductedLeave_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -114,7 +174,7 @@ CREATE TABLE "Permission" (
 CREATE TABLE "RolePermission" (
     "id" SERIAL NOT NULL,
     "roleId" INTEGER NOT NULL,
-    "permisiionId" INTEGER NOT NULL,
+    "permissionId" INTEGER NOT NULL,
 
     CONSTRAINT "RolePermission_pkey" PRIMARY KEY ("id")
 );
@@ -141,6 +201,9 @@ ALTER TABLE "Employee" ADD CONSTRAINT "Employee_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "Employee" ADD CONSTRAINT "Employee_typeOfEmployeeId_fkey" FOREIGN KEY ("typeOfEmployeeId") REFERENCES "TypeOfEmployee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AmountOfLeave" ADD CONSTRAINT "AmountOfLeave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Leave" ADD CONSTRAINT "Leave_typeOfLeaveId_fkey" FOREIGN KEY ("typeOfLeaveId") REFERENCES "TypeOfLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -153,7 +216,22 @@ ALTER TABLE "LeaveEmployee" ADD CONSTRAINT "LeaveEmployee_leaveId_fkey" FOREIGN 
 ALTER TABLE "LeaveEmployee" ADD CONSTRAINT "LeaveEmployee_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "SpecialLeave" ADD CONSTRAINT "SpecialLeave_typeOfLeaveId_fkey" FOREIGN KEY ("typeOfLeaveId") REFERENCES "TypeOfLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmployeeSpecialLeave" ADD CONSTRAINT "EmployeeSpecialLeave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmployeeSpecialLeave" ADD CONSTRAINT "EmployeeSpecialLeave_specialLeaveId_fkey" FOREIGN KEY ("specialLeaveId") REFERENCES "SpecialLeave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeductedLeave" ADD CONSTRAINT "DeductedLeave_leaveId_fkey" FOREIGN KEY ("leaveId") REFERENCES "Leave"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeductedLeave" ADD CONSTRAINT "DeductedLeave_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_permisiionId_fkey" FOREIGN KEY ("permisiionId") REFERENCES "Permission"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "Permission"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
