@@ -203,6 +203,81 @@ const rolePermissions = [
     roleId: 2,
     permissionId: 34,
   },
+  {
+    // 35
+    roleId: 2,
+    permissionId: 6,
+  },
+  {
+    // 36
+    roleId: 2,
+    permissionId: 7,
+  },
+  {
+    // 37
+    roleId: 2,
+    permissionId: 8,
+  },
+  {
+    // 38
+    roleId: 2,
+    permissionId: 11,
+  },
+  {
+    // 39
+    roleId: 2,
+    permissionId: 12,
+  },
+  {
+    // 40
+    roleId: 2,
+    permissionId: 13,
+  },
+  {
+    // 40
+    roleId: 2,
+    permissionId: 21,
+  },
+  {
+    // 41
+    roleId: 1,
+    permissionId: 10,
+  },
+  {
+    // 42
+    roleId: 1,
+    permissionId: 7,
+  },
+  {
+    // 43
+    roleId: 1,
+    permissionId: 11,
+  },
+  {
+    // 44
+    roleId: 1,
+    permissionId: 12,
+  },
+  {
+    // 45
+    roleId: 1,
+    permissionId: 13,
+  },
+  {
+    // 46
+    roleId: 3,
+    permissionId: 9,
+  },
+  {
+    // 47
+    roleId: 3,
+    permissionId: 10,
+  },
+  {
+    // 48
+    roleId: 3,
+    permissionId: 7,
+  },
 ];
 
 async function rolePermissionSeed() {
