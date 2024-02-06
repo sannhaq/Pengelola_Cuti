@@ -8,10 +8,10 @@ const checkPermission = (requiredPermission) => async (req, res, next) => {
     const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { role: { include: { rolePermission: { include: { permission: true } } } } },
+      include: { role: { include: { rolePermissions: { include: { permission: true } } } } },
     });
 
-    const userPermissions = user.role.rolePermission.map((rp) => rp.permission.name);
+    const userPermissions = user.role.rolePermissions.map((rp) => rp.permission.name);
 
     if (userPermissions.includes(requiredPermission)) {
       next();
