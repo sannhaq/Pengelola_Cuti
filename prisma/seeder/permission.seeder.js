@@ -21,6 +21,16 @@ const permissions = [
     name: 'Home',
     created_at: new Date(),
   },
+  {
+    //6
+    name: 'View Mandatory Leave',
+    created_at: new Date(),
+  },
+  {
+    //7
+    name: 'Get Leave History for Current User',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {

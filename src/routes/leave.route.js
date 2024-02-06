@@ -3,12 +3,13 @@ const express = require('express');
 const router = express.Router();
 const leaveController = require('../controllers/leave.controller');
 const roleMiddleware = require('../middleware/role.middleware');
+const checkPermission = require('../middleware/checkPermission.middleware');
 const validation = require('../validations/leave.validation');
 const specialLeaveController = require('../controllers/special-leave.controller');
 
 //  api
 // GET ALL Mandatory Leave
-router.get('/mandatory', roleMiddleware('User', 'Admin'), leaveController.mandatoryLeave);
+router.get('/mandatory', checkPermission('View Mandatory Leave'), leaveController.mandatoryLeave);
 // GET ALL Leave history by user login
 router.get('/history/me', roleMiddleware('User', 'Admin'), leaveController.getLeaveHistoryMe);
 // GET ALL Optional Leave
