@@ -133,6 +133,7 @@ CREATE TABLE "SpecialLeave" (
     "amount" INTEGER NOT NULL,
     "typeOfLeaveId" INTEGER NOT NULL,
     "leaveInformation" TEXT NOT NULL,
+    "isDelete" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

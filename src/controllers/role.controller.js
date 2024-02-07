@@ -123,7 +123,8 @@ async function getAllRolesWithPermissions(req, res) {
     });
 
     // Map through rolesWithPermissions and calculate count of rolePermissions for each role
-    const rolesWithDetails = rolesWithPermissions.map((role) => ({
+    const rolesWithDetails = rolesWithPermissions.map((role, index) => ({
+      no: (pagination.meta.currPage - 1) * pagination.meta.perPage + index + 1,
       id: role.id,
       name: role.name,
       created_at: role.created_at,

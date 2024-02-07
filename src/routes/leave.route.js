@@ -138,4 +138,11 @@ router.patch(
   validation.rejectSpecialLeave,
   specialLeaveController.rejectSpecialLeave,
 );
+
+// delete special leave list
+router.patch(
+  '/special-leave/delete/:id',
+  checkPermission('Delete Special Leave List'),
+  specialLeaveController.deleteSpecialLeaveList,
+);
 module.exports = router;

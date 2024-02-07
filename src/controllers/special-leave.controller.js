@@ -36,7 +36,7 @@ async function getSpecialLeaveList(req, res) {
 
     // Retrieve special leaves based on the applied filters
     const specialLeaves = await prisma.specialLeave.findMany({
-      where: filter,
+      where: { ...filter, isDelete: false },
       orderBy: {
         updated_at: 'desc',
       },
@@ -69,7 +69,7 @@ async function getSpecialLeaveList(req, res) {
 
     // Count total special leaves for the specified criteria
     const totalPage = await prisma.specialLeave.count({
-      where: filter,
+      where: { ...filter, isDelete: false },
     });
 
     return successResponseWithPage(
@@ -517,6 +517,7 @@ async function getSpecialLeaveByNikGender(req, res) {
     const specialLeave = await prisma.specialLeave.findMany({
       where: {
         OR: [{ gender: employee.gender }, { gender: 'LP' }],
+        isDelete: false,
       },
       orderBy: {
         gender: 'asc',
@@ -692,6 +693,24 @@ async function rejectSpecialLeave(req, res) {
     return errorResponse(res, 'Failed to reject special leave', null, 500);
   }
 }
+
+async function deleteSpecialLeaveList(req, res) {
+  try {
+    const { id } = req.params;
+
+    // special leave information
+    const specialLeave = await prisma.specialLeave.update({
+      where: { id: parseInt(id) },
+      data: {
+        isDelete: true,
+      },
+    });
+
+    return successResponse(res, 'Successfully deleted special leave list', specialLeave, 200);
+  } catch (e) {
+    return errorResponse(res, 'Failed to delete special leave list', null, 500);
+  }
+}
 module.exports = {
   getSpecialLeaveList,
   getSpecialLeaveById,
@@ -704,4 +723,5 @@ module.exports = {
   setSpecialLeave,
   approveSpecialLeave,
   rejectSpecialLeave,
+  deleteSpecialLeaveList,
 };

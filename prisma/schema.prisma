@@ -147,6 +147,7 @@ model SpecialLeave {
   typeOfLeaveId         Int
   leaveInformation      String                 @db.Text
   employeeSpecialLeaves EmployeeSpecialLeave[]
+  isDelete              Boolean                @default(false)
   created_at            DateTime               @default(now())
   updated_at            DateTime               @updatedAt
 }

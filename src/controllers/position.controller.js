@@ -43,7 +43,7 @@ async function getPositions(req, res) {
 
     // Add employee count to each position using Promise.all
     const positionsWithEmployeeCount = await Promise.all(
-      positions.map(async (position) => {
+      positions.map(async (position, index) => {
         // Count the number of employees for each position
         const employeeCount = await prisma.employee.count({
           where: {
@@ -52,6 +52,7 @@ async function getPositions(req, res) {
         });
         // Combine position data with employee count
         return {
+          no: (pagination.meta.currPage - 1) * pagination.meta.perPage + index + 1,
           ...position,
           employeeCount,
         };
