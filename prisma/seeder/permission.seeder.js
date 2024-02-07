@@ -186,6 +186,11 @@ const permissions = [
     name: 'Approve and Reject Employee Special Leave',
     created_at: new Date(),
   },
+  {
+    // 35
+    name: 'Get All Role',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {
