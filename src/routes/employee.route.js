@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const employeeController = require('../controllers/employee.controller');
-const roleMiddleware = require('../middleware/role.middleware');
+const checkPermission = require('../middleware/checkPermission.middleware');
 const auth = require('../middleware/auth.middleware');
 const {
   addEmmployeeInputValidation,
@@ -11,26 +11,36 @@ const {
 } = require('../validations/employee/Employee.validation');
 
 // GET All Employee
-router.get('/', roleMiddleware('Super Admin', 'Admin'), employeeController.getAll);
+router.get('/', checkPermission('Get Employee'), employeeController.getAll);
 
 // GET Employee detail By NIK
-router.get('/detail/:nik', employeeController.getNIK);
+router.get('/detail/:nik', checkPermission('Get Detail Employee'), employeeController.getNIK);
 
 // GET Employee login
-router.get('/me', employeeController.getMe);
+router.get('/me', checkPermission('Home'), employeeController.getMe);
 
 // POST Disable employee
-router.post('/disable/:nik', roleMiddleware('Admin'), employeeController.disableEmployee);
+router.post(
+  '/disable/:nik',
+  checkPermission('Disable Employee'),
+  employeeController.disableEmployee,
+);
 
 // POST Enable employee
-router.post('/enable/:nik', roleMiddleware('Admin'), employeeController.enableEmployee);
+router.post('/enable/:nik', checkPermission('Enable Employee'), employeeController.enableEmployee);
 
 // PUT edit employee
-router.put('/update/:nik', editEmmployeeInputValidation, employeeController.updateEmployee);
+router.put(
+  '/update/:nik',
+  checkPermission('Update Employee'),
+  editEmmployeeInputValidation,
+  employeeController.updateEmployee,
+);
 
 // POST change password
 router.post(
   '/change-password',
+  checkPermission('Change Password'),
   auth,
   [
     body('newPassword')
@@ -41,12 +51,16 @@ router.post(
 );
 
 // POST Reset Password
-router.post('/reset-password/:nik', roleMiddleware('Admin'), employeeController.resetPassword);
+router.post(
+  '/reset-password/:nik',
+  checkPermission('Reset Password'),
+  employeeController.resetPassword,
+);
 
 // POST Employee
 router.post(
   '/add',
-  roleMiddleware('Super Admin', 'Admin'),
+  checkPermission('Add Employee'),
   addEmmployeeInputValidation,
   employeeController.addEmployee,
 );
@@ -54,7 +68,7 @@ router.post(
 // POST AmountOfLeave
 router.post(
   '/update-amount-of-leave',
-  roleMiddleware('Super Admin', 'Admin'),
+  checkPermission('Update Amount Of Leave'),
   employeeController.updateAmountOfLeaveForActiveEmployees,
 );
 
