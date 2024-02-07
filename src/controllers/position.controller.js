@@ -16,11 +16,20 @@ const {
  */
 async function getPositions(req, res) {
   try {
-    const { page, perPage } = req.query;
+    const { page, perPage, search } = req.query;
 
     const pagination = await paginate(prisma.positions, { page, perPage });
 
+    const filter = {};
+    if (search) {
+      filter.name = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+
     const positions = await prisma.positions.findMany({
+      where: filter,
       select: {
         id: true,
         name: true,
@@ -46,12 +55,16 @@ async function getPositions(req, res) {
       }),
     );
 
+    const totalPage = await prisma.positions.count({
+      where: filter,
+    });
+
     return successResponseWithPage(
       res,
       'Successfully retrieved positions',
       positionsWithEmployeeCount,
       200,
-      pagination.meta,
+      { ...pagination.meta, total: totalPage, perPage: Math.ceil(totalPage / perPage) },
     );
   } catch (error) {
     // Handle error and return error response

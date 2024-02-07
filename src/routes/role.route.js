@@ -7,6 +7,13 @@ const checkPermission = require('../middleware/checkPermission.middleware');
 // Get all role and permission
 router.get('/', checkPermission('Get All Role'), roleController.getAllRolesWithPermissions);
 
+// GET permissions
+router.get(
+  '/permissions',
+  checkPermission('Create Role', 'Update Role'),
+  roleController.getPermissions,
+);
+
 // PUT role
 router.put('/update/:id', checkPermission('Update Role'), roleController.updateRole);
 
