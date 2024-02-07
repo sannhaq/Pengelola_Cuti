@@ -131,6 +131,8 @@ CREATE TABLE "SpecialLeave" (
     "amount" INTEGER NOT NULL,
     "typeOfLeaveId" INTEGER NOT NULL,
     "leaveInformation" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "SpecialLeave_pkey" PRIMARY KEY ("id")
 );

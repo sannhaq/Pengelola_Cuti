@@ -7,6 +7,8 @@ const specials = [
     amount: 90,
     typeOfLeaveId: 4,
     leaveInformation: 'Maternity leave for mothers after childbirth.',
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Accompanying wife in childbirth',
@@ -14,6 +16,8 @@ const specials = [
     amount: 2,
     typeOfLeaveId: 4,
     leaveInformation: 'Leave for fathers to accompany their wives during childbirth.',
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Miscarriage Leave',
@@ -21,6 +25,8 @@ const specials = [
     amount: 45,
     typeOfLeaveId: 4,
     leaveInformation: 'Leave for mothers after miscarriage.',
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Marriage Leave',
@@ -28,6 +34,8 @@ const specials = [
     amount: 3,
     typeOfLeaveId: 4,
     leaveInformation: 'Leave for employees after marriage.',
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Child`s Marriage Leave',
@@ -35,6 +43,8 @@ const specials = [
     amount: 2,
     typeOfLeaveId: 4,
     leaveInformation: "Leave for employees to attend their child's wedding.",
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Circumcision Leave',
@@ -42,6 +52,8 @@ const specials = [
     amount: 2,
     typeOfLeaveId: 4,
     leaveInformation: "Leave for parents after their child's circumcision.",
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Wife Miscarriage Leave',
@@ -49,6 +61,8 @@ const specials = [
     amount: 2,
     typeOfLeaveId: 4,
     leaveInformation: "Leave for husbands after their wife's miscarriage.",
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Baptism Leave',
@@ -56,6 +70,8 @@ const specials = [
     amount: 2,
     typeOfLeaveId: 4,
     leaveInformation: "Leave for parents after their child's baptism.",
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Family Bereavement Leave',
@@ -64,6 +80,8 @@ const specials = [
     typeOfLeaveId: 4,
     leaveInformation:
       'Leave for employees after the death of a spouse, parent, child, or parent-in-law.',
+    created_at: new Date(),
+    updated_at: new Date(),
   },
   {
     leaveTitle: 'Household Bereavement Leave',
@@ -71,6 +89,8 @@ const specials = [
     amount: 1,
     typeOfLeaveId: 4,
     leaveInformation: 'Leave for employees after the death of a household member.',
+    created_at: new Date(),
+    updated_at: new Date(),
   },
 ];
 

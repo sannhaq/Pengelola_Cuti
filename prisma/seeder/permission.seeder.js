@@ -191,6 +191,11 @@ const permissions = [
     name: 'Get All Role',
     created_at: new Date(),
   },
+  {
+    // 36
+    name: 'Delete Special Leave List',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {

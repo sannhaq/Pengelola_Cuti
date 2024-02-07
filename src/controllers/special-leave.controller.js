@@ -37,6 +37,9 @@ async function getSpecialLeaveList(req, res) {
     // Retrieve special leaves based on the applied filters
     const specialLeaves = await prisma.specialLeave.findMany({
       where: filter,
+      orderBy: {
+        updated_at: 'desc',
+      },
       select: {
         id: true,
         leaveTitle: true,
@@ -155,7 +158,8 @@ async function createSpecialLeave(req, res) {
       },
     });
     return successResponse(res, 'Successfully created special leave', newSpecialLeave, 200);
-  } catch {
+  } catch (e) {
+    console.log(e);
     return errorResponse(res, 'Failed to create special leave', null, 500);
   }
 }

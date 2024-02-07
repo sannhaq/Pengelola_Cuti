@@ -107,6 +107,9 @@ async function getAllRolesWithPermissions(req, res) {
     // Get all roles with their associated permissions and count of rolePermissions
     const rolesWithPermissions = await prisma.role.findMany({
       where: filter,
+      orderBy: {
+        updated_at: 'desc',
+      },
       include: {
         rolePermissions: {
           include: {
