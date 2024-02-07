@@ -1,19 +1,21 @@
-const { prisma } = require("./config")
-const { faker } = require('@faker-js/faker')
+const { prisma } = require('./config');
+const { faker } = require('@faker-js/faker');
 
 const generateFakePositions = () => {
   return {
     name: faker.person.jobType(),
-  }
-}
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+};
 
 async function positionSeed() {
   for (let i = 0; i < 10; i++) {
-    const fakePosition = generateFakePositions()
+    const fakePosition = generateFakePositions();
     await prisma.positions.create({
       data: fakePosition,
-    })
+    });
   }
 }
 
-module.exports = { positionSeed }
+module.exports = { positionSeed };

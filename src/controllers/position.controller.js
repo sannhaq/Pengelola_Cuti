@@ -19,6 +19,9 @@ async function getPositions(req, res) {
         id: true,
         name: true,
       },
+      orderBy: {
+        updated_at: 'desc',
+      },
       skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
       take: pagination.meta.perPage,
     });
