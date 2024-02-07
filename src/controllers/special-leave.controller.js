@@ -57,16 +57,32 @@ async function getSpecialLeaveList(req, res) {
       take: pagination.meta.perPage,
     });
 
+    const displaySpecialLeaves = specialLeaves.map((leave, index) => ({
+      no: (pagination.meta.currPage - 1) * pagination.meta.perPage + index + 1,
+      id: leave.id,
+      leaveTitle: leave.leaveTitle,
+      gender: leave.gender,
+      amount: leave.amount,
+      leaveInformation: leave.leaveInformation,
+      typeOfLeave: leave.typeOfLeave.name,
+    }));
+
     // Count total special leaves for the specified criteria
     const totalPage = await prisma.specialLeave.count({
       where: filter,
     });
 
-    return successResponseWithPage(res, 'Succescfully get special leave list', specialLeaves, 200, {
-      ...pagination.meta,
-      total: totalPage,
-      lastPage: Math.ceil(totalPage / perPage),
-    });
+    return successResponseWithPage(
+      res,
+      'Succescfully get special leave list',
+      displaySpecialLeaves,
+      200,
+      {
+        ...pagination.meta,
+        total: totalPage,
+        lastPage: Math.ceil(totalPage / perPage),
+      },
+    );
   } catch (e) {
     console.log(e);
     return errorResponse(res, 'Failed to get special leave list', null, 500);

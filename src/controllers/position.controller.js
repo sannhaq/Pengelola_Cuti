@@ -30,12 +30,12 @@ async function getPositions(req, res) {
 
     const positions = await prisma.positions.findMany({
       where: filter,
+      orderBy: {
+        updated_at: 'desc',
+      },
       select: {
         id: true,
         name: true,
-      },
-      orderBy: {
-        updated_at: 'desc',
       },
       skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
       take: pagination.meta.perPage,
