@@ -20,7 +20,7 @@ const {
 async function getAll(req, res) {
   try {
     // Extract page, perPage, search, and orderBy from query parameters
-    const { page, perPage, search, orderBy, isWorking } = req.query;
+    const { page, perPage, search, orderBy, isWorking, position } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.employee, { page, perPage });
@@ -59,6 +59,15 @@ async function getAll(req, res) {
         { positions: { name: { contains: search, mode: 'insensitive' } }, isWorking: true },
       ];
       baseQuery = { ...baseQuery, where: filter };
+    }
+
+    if (position) {
+      filter.positions = {
+        name: {
+          contains: position,
+          mode: 'insensitive',
+        },
+      };
     }
 
     // Add orderBy condition based on the orderBy parameter
