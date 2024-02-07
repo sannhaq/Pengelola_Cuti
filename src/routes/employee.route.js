@@ -14,10 +14,10 @@ const {
 router.get('/', roleMiddleware('Super Admin', 'Admin'), employeeController.getAll);
 
 // GET Employee detail By NIK
-router.get('/detail/:nik', roleMiddleware('Super Admin', 'Admin'), employeeController.getNIK);
+router.get('/detail/:nik', employeeController.getNIK);
 
 // GET Employee login
-router.get('/me', roleMiddleware('Admin', 'User'), employeeController.getMe);
+router.get('/me', employeeController.getMe);
 
 // POST Disable employee
 router.post('/disable/:nik', roleMiddleware('Admin'), employeeController.disableEmployee);
@@ -49,6 +49,13 @@ router.post(
   roleMiddleware('Super Admin', 'Admin'),
   addEmmployeeInputValidation,
   employeeController.addEmployee,
+);
+
+// POST AmountOfLeave
+router.post(
+  '/update-amount-of-leave',
+  roleMiddleware('Super Admin', 'Admin'),
+  employeeController.updateAmountOfLeaveForActiveEmployees,
 );
 
 module.exports = router;

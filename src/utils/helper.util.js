@@ -1,4 +1,6 @@
 const { z } = require('zod');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 function sum(a, b) {
   return a + b;
@@ -75,10 +77,21 @@ function calculateLeaveAmount(startLeave, endLeave) {
   const startDate = new Date(startLeave);
   const endDate = new Date(endLeave);
 
-  const timeDifference = Math.abs(endDate - startDate);
-  const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+  let totalDays = 0;
 
-  return daysDifference;
+  while (startDate <= endDate) {
+    const dayOfWeek = startDate.getDay();
+
+    // Jika bukan Sabtu (6) atau Minggu (0), tambahkan ke totalDays
+    if (dayOfWeek !== 6 && dayOfWeek !== 0) {
+      totalDays++;
+    }
+
+    // Tambah satu hari ke startDate
+    startDate.setDate(startDate.getDate() + 1);
+  }
+
+  return totalDays;
 }
 
 function formatDateObjectToDDMMYYYY(dateObject) {
@@ -137,6 +150,43 @@ function validate(scheme) {
   };
 }
 
+async function updateLeaveAmount(employeeNik, deductionInfo, operation) {
+  let today = new Date();
+  let currentYear = today.getFullYear();
+  let previousYear = currentYear - 1;
+
+  const amountOfLeave = await prisma.amountOfLeave.findMany({
+    where: { employeeNik: employeeNik },
+    select: {
+      id: true,
+      year: true,
+    },
+  });
+
+  for (const entry of amountOfLeave) {
+    if (
+      entry.year === previousYear &&
+      deductionInfo.previousYearDeduct !== null &&
+      deductionInfo.previousYearDeduct !== 0
+    ) {
+      await prisma.amountOfLeave.update({
+        where: { id: entry.id },
+        data: { amount: { [operation]: deductionInfo.previousYearDeduct } }, // Menggunakan parameter operasi
+      });
+    }
+    if (
+      entry.year === currentYear &&
+      deductionInfo.currentYearDeduct !== null &&
+      deductionInfo.currentYearDeduct !== 0
+    ) {
+      await prisma.amountOfLeave.update({
+        where: { id: entry.id },
+        data: { amount: { [operation]: deductionInfo.currentYearDeduct } }, // Menggunakan parameter operasi
+      });
+    }
+  }
+}
+
 module.exports = {
   sum,
   successResponse,
@@ -147,5 +197,6 @@ module.exports = {
   formatDateObjectToDDMMYYYY,
   formatEmployeeData,
   formatLeaveHistoryData,
-  validate
+  validate,
+  updateLeaveAmount,
 };
