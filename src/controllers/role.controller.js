@@ -113,22 +113,21 @@ async function getAllRolesWithPermissions(req, res) {
             permission: true,
           },
         },
+        users: true,
       },
       skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
       take: pagination.meta.perPage,
     });
 
     // Map through rolesWithPermissions and calculate count of rolePermissions for each role
-    const rolesWithPermissionCount = rolesWithPermissions.map((role) => ({
-      ...role,
+    const rolesWithDetails = rolesWithPermissions.map((role) => ({
+      id: role.id,
+      name: role.name,
+      created_at: role.created_at,
+      updated_at: role.updated_at,
       rolePermissionCount: role.rolePermissions.length,
+      userCount: role.users.length,
     }));
-
-    // Remove rolePermissions from each role object
-    const rolesWithoutPermissions = rolesWithPermissionCount.map((role) => {
-      const { rolePermissions, ...roleWithoutPermissions } = role;
-      return roleWithoutPermissions;
-    });
 
     const totalPage = await prisma.role.count({
       where: filter,
@@ -138,7 +137,7 @@ async function getAllRolesWithPermissions(req, res) {
     return successResponseWithPage(
       res,
       'All roles with rolePermission count retrieved successfully',
-      rolesWithoutPermissions,
+      rolesWithDetails,
       200,
       {
         ...pagination.meta,
@@ -262,8 +261,23 @@ async function getRoleById(req, res) {
       },
       include: {
         rolePermissions: {
-          include: {
-            permission: true,
+          select: {
+            permission: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        users: {
+          select: {
+            employee: {
+              select: {
+                nik: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -275,7 +289,12 @@ async function getRoleById(req, res) {
     }
 
     // Return success response with the role details and its permissions
-    return successResponse(res, 'Role details with permissions retrieved successfully', role, 200);
+    return successResponse(
+      res,
+      'Role details with permissions and employee names retrieved successfully',
+      role,
+      200,
+    );
   } catch (error) {
     // Handle error and return error response
     console.error('Failed to get role details:', error);
