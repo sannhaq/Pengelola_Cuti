@@ -2,7 +2,12 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-const { errorResponse, successResponse } = require('../utils/helper.util');
+const {
+  errorResponse,
+  successResponse,
+  successResponseWithPage,
+  paginate,
+} = require('../utils/helper.util');
 
 /**
  * Update Role by ID
@@ -85,8 +90,23 @@ async function updateRole(req, res) {
  */
 async function getAllRolesWithPermissions(req, res) {
   try {
+    // Extract query parameters from the request
+    const { page, perPage, search } = req.query;
+
+    // Perform pagination using the paginate utility function
+    const pagination = await paginate(prisma.role, { page, perPage });
+
+    const filter = {};
+    if (search) {
+      filter.name = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+
     // Get all roles with their associated permissions and count of rolePermissions
     const rolesWithPermissions = await prisma.role.findMany({
+      where: filter,
       include: {
         rolePermissions: {
           include: {
@@ -94,6 +114,8 @@ async function getAllRolesWithPermissions(req, res) {
           },
         },
       },
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
     });
 
     // Map through rolesWithPermissions and calculate count of rolePermissions for each role
@@ -108,12 +130,21 @@ async function getAllRolesWithPermissions(req, res) {
       return roleWithoutPermissions;
     });
 
+    const totalPage = await prisma.role.count({
+      where: filter,
+    });
+
     // Return success response with roles and their rolePermission counts
-    return successResponse(
+    return successResponseWithPage(
       res,
       'All roles with rolePermission count retrieved successfully',
       rolesWithoutPermissions,
       200,
+      {
+        ...pagination.meta,
+        total: totalPage,
+        lastPage: Math.ceil(totalPage / perPage),
+      },
     );
   } catch (error) {
     // Handle error and return error response
@@ -257,10 +288,37 @@ async function getRoleById(req, res) {
   }
 }
 
+async function getPermissions(req, res) {
+  try {
+    const { page, perPage } = req.query;
+
+    const pagination = await paginate(prisma.permission, { page, perPage });
+
+    const permissions = await prisma.permission.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
+    });
+
+    return successResponseWithPage(
+      res,
+      'Successfully get permissions',
+      permissions,
+      200,
+      pagination.meta,
+    );
+  } catch {
+    return errorResponse(res, 'Failed to get permissions', null, 500);
+  }
+}
 module.exports = {
   updateRole,
   getAllRolesWithPermissions,
   createRoleWithPermissions,
   deleteRole,
   getRoleById,
+  getPermissions,
 };
