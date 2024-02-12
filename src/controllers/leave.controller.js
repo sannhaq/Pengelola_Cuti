@@ -11,6 +11,10 @@ const {
   updateLeaveAmount,
 } = require('../utils/helper.util');
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 async function getLeaveHistoryNik(req, res) {
   try {
     // Extract NIK from request parameters
@@ -122,6 +126,10 @@ async function getLeaveHistoryNik(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 async function getLeaveHistoryMe(req, res) {
   try {
     // Extract user ID from the authenticated user
@@ -206,6 +214,10 @@ async function getLeaveHistoryMe(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 async function mandatoryLeave(req, res) {
   try {
     // Extract page and perPage from query parameters for pagination

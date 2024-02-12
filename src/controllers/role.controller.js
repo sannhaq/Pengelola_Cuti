@@ -337,6 +337,27 @@ async function getPermissions(req, res) {
     return errorResponse(res, 'Failed to get permissions', null, 500);
   }
 }
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function selectRole(req, res) {
+  try {
+    const role = await prisma.role.findMany({
+      where: { name: { not: 'Super Admin' } },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    return successResponse(res, 'Successfully get role', role);
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to select role', null, 500);
+  }
+}
 module.exports = {
   updateRole,
   getAllRolesWithPermissions,
@@ -344,4 +365,5 @@ module.exports = {
   deleteRole,
   getRoleById,
   getPermissions,
+  selectRole,
 };

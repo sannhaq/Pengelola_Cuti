@@ -23,6 +23,9 @@ router.post('/create', checkPermission('Create Role'), roleController.createRole
 // DELETE role
 router.delete('/delete/:id', checkPermission('Delete Role'), roleController.deleteRole);
 
+// GET role for select
+router.get('/select', checkPermission('Update Employee'), roleController.selectRole);
+
 // GET role by id
 router.get('/:id', checkPermission('Get All Role'), roleController.getRoleById);
 
