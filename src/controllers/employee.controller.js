@@ -148,6 +148,7 @@ async function getNIK(req, res) {
         name: true,
         positions: {
           select: {
+            id: true,
             name: true,
           },
         },
@@ -166,6 +167,7 @@ async function getNIK(req, res) {
             email: true,
             role: {
               select: {
+                id: true,
                 name: true,
               },
             },

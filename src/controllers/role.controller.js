@@ -315,8 +315,10 @@ async function getPermissions(req, res) {
   try {
     const { page, perPage } = req.query;
 
+    // Perform pagination
     const pagination = await paginate(prisma.permission, { page, perPage });
 
+    // Retrieve permissions based on pagination settings
     const permissions = await prisma.permission.findMany({
       select: {
         id: true,
@@ -326,15 +328,16 @@ async function getPermissions(req, res) {
       take: pagination.meta.perPage,
     });
 
+    // Send success response with pagination metadata
     return successResponseWithPage(
       res,
-      'Successfully get permissions',
+      'Successfully retrieved permissions',
       permissions,
       200,
       pagination.meta,
     );
   } catch {
-    return errorResponse(res, 'Failed to get permissions', null, 500);
+    return errorResponse(res, 'Failed to retrieve permissions', null, 500);
   }
 }
 
@@ -344,7 +347,8 @@ async function getPermissions(req, res) {
  */
 async function selectRole(req, res) {
   try {
-    const role = await prisma.role.findMany({
+    // Retrieve roles excluding 'Super Admin'
+    const roles = await prisma.role.findMany({
       where: { name: { not: 'Super Admin' } },
       select: {
         id: true,
@@ -352,12 +356,14 @@ async function selectRole(req, res) {
       },
     });
 
-    return successResponse(res, 'Successfully get role', role);
+    // Send success response with roles
+    return successResponse(res, 'Successfully get roles', roles);
   } catch (e) {
     console.log(e);
-    return errorResponse(res, 'Failed to select role', null, 500);
+    return errorResponse(res, 'Failed to select roles', null, 500);
   }
 }
+
 module.exports = {
   updateRole,
   getAllRolesWithPermissions,
