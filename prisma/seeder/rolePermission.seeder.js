@@ -56,10 +56,10 @@ const rolePermissions = [
   },
 
   // 10
-  {
-    roleId: 2,
-    permissionId: 14,
-  },
+  // {
+  //   roleId: 2,
+  //   permissionId: 14,
+  // },
 
   {
     roleId: 1,
@@ -79,20 +79,20 @@ const rolePermissions = [
   },
 
   // 13
-  {
-    roleId: 2,
-    permissionId: 15,
-  },
+  // {
+  //   roleId: 2,
+  //   permissionId: 15,
+  // },
   // 13
   {
     roleId: 1,
     permissionId: 15,
   },
   // 14
-  {
-    roleId: 2,
-    permissionId: 16,
-  },
+  // {
+  //   roleId: 2,
+  //   permissionId: 16,
+  // },
   //14
   {
     roleId: 1,
@@ -293,11 +293,11 @@ const rolePermissions = [
     roleId: 3,
     permissionId: 7,
   },
-  {
-    // 49
-    roleId: 2,
-    permissionId: 35,
-  },
+  // {
+  //   // 49
+  //   roleId: 2,
+  //   permissionId: 35,
+  // },
   {
     // 49
     roleId: 1,
