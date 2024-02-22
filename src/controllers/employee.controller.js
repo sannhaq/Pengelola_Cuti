@@ -915,7 +915,54 @@ async function resetPassword(req, res) {
       from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
       to: employee.user.email,
       subject: 'Password Reset',
-      text: `Your password has been reset. Your new password is:\nPassword: ${randomPassword}`,
+      html: `
+        <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f4;
+                padding: 20px;
+              }
+              .container {
+                max-width: 600px;
+                margin: auto;
+                background: #fff;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+              }
+              .header {
+                background: #007bff;
+                color: #fff;
+                text-align: center;
+                padding: 10px 0;
+                border-radius: 10px 10px 0 0;
+              }
+              .content {
+                padding: 20px 0;
+              }
+              .password {
+                font-size: 18px;
+                font-weight: bold;
+                text-align: center;
+                padding: 10px 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Password Reset Notification</h1>
+              </div>
+              <div class="content">
+                <p>Your password has been reset. Below is your new password:</p>
+                <p class="password">${randomPassword}</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
     };
 
     // Send the email and log the response
@@ -1266,48 +1313,89 @@ async function addEmployee(req, res) {
       to: email,
       subject: 'Welcome to the Company',
       html: `
-        <html>
-          <head>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-              }
-              .container {
-                width: 100%;
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                border: 1px solid #ccc;
-                border-radius: 10px;
-              }
-              .header {
-                text-align: center;
-                margin-bottom: 20px;
-              }
-              .content {
-                margin-bottom: 20px;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>Welcome to the Company</h1>
-              </div>
-              <div class="content">
-                <p>Dear ${name},</p>
-                <p>Welcome to the company!</p>
-                <p>Your login credentials:</p>
-                <ul>
-                  <li><strong>Email:</strong> ${email}</li>
-                  <li><strong>Password:</strong> ${randomPassword}</li>
-                </ul>
-                <p>Best regards, The Company</p>
-                <p>This email was sent by ${senderName}</p>
-              </div>
-            </div>
-          </body>
-        </html>
+      <html>
+      <head>
+    
+        <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #f7f7f7;
+        }
+        .container {
+          max-width: 600px;
+          margin: 20px auto;
+          background-color: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+          background-color: #007bff;
+          color: #fff;
+          text-align: center;
+          padding: 20px 0;
+          border-top-left-radius: 8px;
+          border-top-right-radius: 8px;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 24px;
+        }
+        .content {
+          padding: 20px;
+        }
+        .content p {
+          margin: 10px 0;
+        }
+        .credentials {
+          
+          padding: 10px 20px;
+          border-radius: 4px;
+          text-align: start;
+		self-align: center;
+      margin: 0 auto; /* Center the table */
+
+        }
+        .credentials strong {
+          font-weight: bold;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 20px;
+          color: #666;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Welcome to the Company</h1>
+        </div>
+        <div class="content">
+          <p>Dear ${name},</p>
+          <p>Thank you for joining our company! Here are your login credentials:</p>
+          <table class="credentials">
+          <tr>
+            <td><strong>Email</strong></td>
+            <td><strong>:</strong></td>
+            <td>${email}</td>
+          </tr>
+          <tr>
+            <td><strong>Password</strong></td>
+            <td><strong>:</strong></td>
+            <td>${randomPassword}</td>
+          </tr>
+          </table>
+        </div>
+        <div class="footer">
+          <p>Best regards, <br> The Company</p>
+          <p>This email was sent by ${senderName}</p>
+        </div>
+      </div>
+      </body>
+    </html>
       `,
     };
 
