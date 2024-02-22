@@ -21,6 +21,9 @@ async function updateRole(req, res) {
   const { permissions, name } = req.body;
 
   try {
+    if (!permissions || permissions.length === 0) {
+      return errorResponse(res, 'Permissions are required', 'Permissions must be provided', 400);
+    }
     // Find the role by its unique ID
     const role = await prisma.role.findUnique({
       where: {
@@ -163,6 +166,9 @@ async function createRoleWithPermissions(req, res) {
   const { name, permissions } = req.body;
 
   try {
+    if (!permissions || permissions.length === 0) {
+      return errorResponse(res, 'Permissions are required', 'Permissions must be provided', 400);
+    }
     // Create a new role in the database
     const newRole = await prisma.role.create({
       data: {
