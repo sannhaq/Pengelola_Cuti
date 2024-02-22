@@ -852,7 +852,17 @@ async function resetPassword(req, res) {
     }
 
     // Generate random password
-    const randomPassword = crypto.randomBytes(8).toString('hex');
+    function generateRandomPassword(length) {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return password;
+    }
+
+    // Generate random password dengan panjang 8 karakter
+    const randomPassword = generateRandomPassword(8);
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
     // Update the user's password in the database
@@ -879,10 +889,10 @@ async function resetPassword(req, res) {
     });
 
     const mailOptions = {
-      from: process.env.GMAIL_USER,
+      from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
       to: employee.user.email,
       subject: 'Password Reset',
-      text: `Your password has been reset. Your new password is:\nSecret Key: ${randomPassword}`,
+      text: `Your password has been reset. Your new password is:\nPassword: ${randomPassword}`,
     };
 
     // Send the email and log the response
@@ -1038,7 +1048,17 @@ async function addEmployee(req, res) {
     const { name: historicalName, nik: historicalNik } = employeeData;
 
     // Set password
-    const randomPassword = crypto.randomBytes(8).toString('hex');
+    function generateRandomPassword(length) {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return password;
+    }
+
+    // Generate random password dengan panjang 8 karakter
+    const randomPassword = generateRandomPassword(8);
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
     const amountOfLeaveData = [];
@@ -1190,6 +1210,21 @@ async function addEmployee(req, res) {
       },
     });
 
+    const currentUser = await prisma.user.findUnique({
+      where: {
+        id: req.user.id,
+      },
+      select: {
+        employee: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    const senderName = currentUser.employee.name;
+
     // Konfigurasi transporter untuk mengirim email
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -1204,10 +1239,53 @@ async function addEmployee(req, res) {
 
     // Konfigurasi opsi email
     const mailOptions = {
-      from: process.env.GMAIL_USER,
+      from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: 'Welcome to the Company',
-      text: `Dear ${name},\n\nWelcome to the company!\n\nYour login credentials:\nEmail: ${email}\nSecret Key: ${randomPassword}\n\nBest regards,\nThe Company`,
+      html: `
+        <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+              }
+              .container {
+                width: 100%;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                border: 1px solid #ccc;
+                border-radius: 10px;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 20px;
+              }
+              .content {
+                margin-bottom: 20px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Welcome to the Company</h1>
+              </div>
+              <div class="content">
+                <p>Dear ${name},</p>
+                <p>Welcome to the company!</p>
+                <p>Your login credentials:</p>
+                <ul>
+                  <li><strong>Email:</strong> ${email}</li>
+                  <li><strong>Password:</strong> ${randomPassword}</li>
+                </ul>
+                <p>Best regards, The Company</p>
+                <p>This email was sent by ${senderName}</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
     };
 
     // Kirim email
