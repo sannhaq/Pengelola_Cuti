@@ -145,4 +145,16 @@ router.patch(
   checkPermission('Delete Special Leave List'),
   specialLeaveController.deleteSpecialLeaveList,
 );
+
+router.get(
+  '/receive-email',
+  checkPermission('Receiving Email Requests for Leave'),
+  leaveController.getCanReceiveEmailLeave,
+);
+
+router.patch(
+  '/receive-email',
+  checkPermission('Receiving Email Requests for Leave'),
+  leaveController.updateEmailPreference,
+);
 module.exports = router;

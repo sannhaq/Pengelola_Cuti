@@ -184,6 +184,14 @@ CREATE TABLE "RolePermission" (
     CONSTRAINT "RolePermission_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "EmailPreference" (
+    "userId" INTEGER NOT NULL,
+    "receiveEmail" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "EmailPreference_pkey" PRIMARY KEY ("userId")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
