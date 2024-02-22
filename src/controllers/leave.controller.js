@@ -951,6 +951,59 @@ async function allLeaves(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function getCanReceiveEmailLeave(req, res) {
+  try {
+    const id = req.user.id;
+
+    const receiveEmail = await prisma.emailPreference.findUnique({
+      where: { userId: id },
+      select: {
+        userId: true,
+        receiveEmail: true,
+      },
+    });
+
+    return successResponse(res, 'Successfully get receive email', receiveEmail);
+  } catch {
+    return errorResponse(res, 'Failed to get receive email', null);
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function updateEmailPreference(req, res) {
+  try {
+    const id = req.user.id;
+
+    const currentEmailPreference = await prisma.emailPreference.findUnique({
+      where: { userId: id },
+      select: {
+        userId: true,
+        receiveEmail: true,
+      },
+    });
+
+    const newReceiveEmailValue = !currentEmailPreference.receiveEmail;
+
+    const updatedEmailPreference = await prisma.emailPreference.update({
+      where: { userId: id },
+      data: {
+        receiveEmail: newReceiveEmailValue,
+      },
+    });
+
+    return successResponse(res, 'Successfully update receive email', updatedEmailPreference);
+  } catch {
+    return errorResponse(res, 'Failed to update receive email', null);
+  }
+}
+
 module.exports = {
   getLeaveHistoryNik,
   getLeaveHistoryMe,
@@ -962,4 +1015,6 @@ module.exports = {
   approvePersonalLeave,
   rejectPersonalLeave,
   allLeaves,
+  getCanReceiveEmailLeave,
+  updateEmailPreference,
 };

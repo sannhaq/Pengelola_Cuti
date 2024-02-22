@@ -196,6 +196,11 @@ const permissions = [
     name: 'Delete Special Leave List',
     created_at: new Date(),
   },
+  {
+    // 37
+    name: 'Receiving Email Requests for Leave',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {

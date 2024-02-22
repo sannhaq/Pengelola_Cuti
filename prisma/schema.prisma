@@ -190,3 +190,8 @@ model RolePermission {
   role         Role       @relation(fields: [roleId], references: [id])
   permission   Permission @relation(fields: [permissionId], references: [id])
 }
+
+model EmailPreference {
+  userId       Int     @id
+  receiveEmail Boolean @default(true)
+}

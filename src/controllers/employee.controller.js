@@ -722,6 +722,7 @@ async function updateEmployee(req, res) {
         typeOfEmployee: true,
         user: {
           select: {
+            id: true,
             role: true,
           },
         },
@@ -814,6 +815,42 @@ async function updateEmployee(req, res) {
         typeOfEmployee.startContract,
         typeOfEmployee.endContract,
       );
+    }
+
+    const newRolePermissions = await prisma.rolePermission.findMany({
+      where: {
+        roleId: roleId,
+      },
+      include: {
+        permission: true,
+      },
+    });
+
+    const hasReceiveEmailPermission = newRolePermissions.some(
+      (rolePermission) => rolePermission.permission.name === 'Receiving Email Requests for Leave',
+    );
+
+    if (hasReceiveEmailPermission) {
+      // Jika peran baru memiliki izin, buat atau perbarui EmailPreference
+      await prisma.emailPreference.upsert({
+        where: {
+          userId: employee.user.id,
+        },
+        update: {
+          receiveEmail: true,
+        },
+        create: {
+          userId: employee.user.id,
+          receiveEmail: true,
+        },
+      });
+    } else {
+      // Jika peran baru tidak memiliki izin, hapus EmailPreference jika ada
+      await prisma.emailPreference.deleteMany({
+        where: {
+          userId: employee.user.id,
+        },
+      });
     }
 
     return successResponse(res, 'Employee updated successfully', employee, 200);

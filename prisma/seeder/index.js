@@ -1,5 +1,6 @@
 const { amountOfLeaveSeed } = require('./amount-of-leave.seeder');
 const { prisma } = require('./config');
+const { emailPrefereceSeed } = require('./email-preference.seeder');
 const { employeeSpecialSeed } = require('./employee-special-leave.seeder');
 const { employeeSeed } = require('./employee.seeder');
 const { leaveEmployeeSeed } = require('./leave-employee.seeder');
@@ -28,6 +29,7 @@ async function main() {
   await employeeSpecialSeed();
   await permissionSeed();
   await rolePermissionSeed();
+  await emailPrefereceSeed();
 }
 
 main()
