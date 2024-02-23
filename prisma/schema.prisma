@@ -114,6 +114,7 @@ model Leave {
   startLeave     DateTime        @db.Date
   endLeave       DateTime        @db.Date
   reason         String
+  emailSent      Boolean         @default(false)
   created_at     DateTime        @default(now())
   updated_at     DateTime        @updatedAt
   leaveEmployees LeaveEmployee[]
@@ -136,6 +137,8 @@ model LeaveEmployee {
   employee    Employee @relation(fields: [employeeNik], references: [nik])
   status      Status   @default(WAITING)
   note        String?
+  approveBy   String?
+  rejectBy    String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 }
