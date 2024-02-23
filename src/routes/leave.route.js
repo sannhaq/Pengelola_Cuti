@@ -173,10 +173,10 @@ router.post(
 );
 
 // POST send email for leave optional
-// router.post(
-//   '/send-leave-email/optional/:id',
-//   checkPermission('Send Email for Leave'),
-//   leaveController.sendEmailLeaveOptionalById,
-// );
+router.post(
+  '/send-leave-email/optional/:id',
+  checkPermission('Send Email for Leave'),
+  leaveController.sendEmailLeaveOptionalById,
+);
 
 module.exports = router;

@@ -1217,6 +1217,10 @@ async function sendEmailLeaveMandatoryById(req, res) {
       return errorResponse(res, 'Leave type is not Mandatory', '', 400);
     }
 
+    if (leave.emailSent) {
+      return errorResponse(res, 'Leave email has already been sent', '', 400);
+    }
+
     const employee = await prisma.employee.findUnique({
       where: {
         userId: req.user.id,
@@ -1364,6 +1368,15 @@ async function sendEmailLeaveMandatoryById(req, res) {
     // Send the email
     await transporter.sendMail(mailOptions);
 
+    await prisma.leave.update({
+      where: {
+        id: parseInt(id),
+      },
+      data: {
+        emailSent: true,
+      },
+    });
+
     // Respond with success message
     return successResponse(res, 'Leave email sent successfully', '', 200);
   } catch (error) {
@@ -1393,6 +1406,7 @@ async function sendEmailLeaveOptionalById(req, res) {
                 user: {
                   select: {
                     email: true,
+                    role: true,
                   },
                 },
               },
@@ -1412,6 +1426,10 @@ async function sendEmailLeaveOptionalById(req, res) {
       return errorResponse(res, 'Leave type is not Optional', '', 400);
     }
 
+    if (leave.emailSent) {
+      return errorResponse(res, 'Leave email has already been sent', '', 400);
+    }
+
     const employee = await prisma.employee.findUnique({
       where: {
         userId: req.user.id,
@@ -1424,7 +1442,15 @@ async function sendEmailLeaveOptionalById(req, res) {
     const senderName = employee.name;
 
     // Construct an array of recipient emails
-    const recipientEmails = leave.leaveEmployees.map(({ employee }) => employee.user.email);
+
+    const recipientEmails = leave.leaveEmployees
+      .filter(({ employee }) => {
+        const userEmail = employee.user.email;
+        const roleId = employee.user.role.id;
+        console.log(`Email: ${userEmail}, Role ID: ${roleId}`);
+        return roleId !== 1;
+      })
+      .map(({ employee }) => employee.user.email);
 
     // Periksa nilai startLeave dan endLeave
     console.log('Start Date:', leave.startLeave);
@@ -1519,7 +1545,7 @@ async function sendEmailLeaveOptionalById(req, res) {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Mandatory Leave Information</h1>
+            <h1>Optional Leave Information</h1>
           </div>
           <div class="content">
             <p>There would be a <b>${reason}</b> leave during this period:</p>
@@ -1543,6 +1569,10 @@ async function sendEmailLeaveOptionalById(req, res) {
             </p>
             <p>This email was sent by ${senderName}</p>
           </div>
+          <p style="font-size:">
+            <b><i>Note: You should reject the leave in Optional Leave page <br />
+            if you don't want to accept this leave.</i></b>
+          </p>
         </div>
       </body>
     </html>`,
@@ -1550,6 +1580,15 @@ async function sendEmailLeaveOptionalById(req, res) {
 
     // Send the email
     await transporter.sendMail(mailOptions);
+
+    await prisma.leave.update({
+      where: {
+        id: parseInt(id),
+      },
+      data: {
+        emailSent: true,
+      },
+    });
 
     // Respond with success message
     return successResponse(res, 'Leave email sent successfully', '', 200);
@@ -1574,5 +1613,5 @@ module.exports = {
   updateEmailPreference,
   getCollectiveLeave,
   sendEmailLeaveMandatoryById,
-  // sendEmailLeaveOptionalById,
+  sendEmailLeaveOptionalById,
 };
