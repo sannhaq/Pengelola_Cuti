@@ -67,6 +67,13 @@ router.patch(
 // GET All leave
 router.get('/all', checkPermission('View All Leave History'), leaveController.allLeaves);
 
+// GET All collective leave
+router.get(
+  '/collective-leave',
+  checkPermission('View All Leave History'),
+  leaveController.getCollectiveLeave,
+);
+
 // GET All special leave list
 router.get(
   '/special-leaves',

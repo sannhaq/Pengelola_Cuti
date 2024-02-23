@@ -98,6 +98,8 @@ CREATE TABLE "Leave" (
     "startLeave" DATE NOT NULL,
     "endLeave" DATE NOT NULL,
     "reason" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Leave_pkey" PRIMARY KEY ("id")
 );
