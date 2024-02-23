@@ -164,4 +164,19 @@ router.patch(
   checkPermission('Receiving Email Requests for Leave'),
   leaveController.updateEmailPreference,
 );
+
+// POST send email for leave mandatory
+router.post(
+  '/send-leave-email/mandatory/:id',
+  checkPermission('Send Email for Leave'),
+  leaveController.sendEmailLeaveMandatoryById,
+);
+
+// POST send email for leave optional
+router.post(
+  '/send-leave-email/optional/:id',
+  checkPermission('Send Email for Leave'),
+  leaveController.sendEmailLeaveOptionalById,
+);
+
 module.exports = router;
