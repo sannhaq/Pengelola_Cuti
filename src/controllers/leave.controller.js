@@ -107,13 +107,36 @@ async function getLeaveHistoryNik(req, res) {
     });
 
     // Transform the leave history data for response
-    const allLeaves = leaveHistory.map((item) => ({
-      ...item.employee,
-      ...item.leave,
-      status: item.status,
-      leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
-      note: item.note,
-    }));
+    const allLeaves = leaveHistory.map((item) => {
+      let additionalFields = {};
+
+      if (item.status === 'APPROVE') {
+        additionalFields.approveBy = item.approveBy;
+      }
+
+      if (item.status === 'REJECT') {
+        additionalFields.rejectBy = item.rejectBy;
+      }
+
+      if (item.status != 'WAITING') {
+        return {
+          ...item.employee,
+          ...item.leave,
+          status: item.status,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+          ...additionalFields,
+        };
+      } else {
+        return {
+          ...item.employee,
+          ...item.leave,
+          status: item.status,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+        };
+      }
+    });
 
     return successResponseWithPage(res, 'Successfully retrieved leave history', allLeaves, 200, {
       ...pagination.meta,
@@ -407,6 +430,20 @@ async function collectiveLeave(req, res) {
       return errorResponse(res, 'End date should be greater than start date', null, 400);
     }
 
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: approveBy } = employeeData;
+
     // Finding eligible employees who are currently working and have roles with id 2 or 3
     const eligibleEmployee = await prisma.employee.findMany({
       where: {
@@ -445,6 +482,7 @@ async function collectiveLeave(req, res) {
         leaveId,
         employeeNik: emp.nik.toString(),
         status: 'APPROVE',
+        approveBy: approveBy,
       })),
     });
 

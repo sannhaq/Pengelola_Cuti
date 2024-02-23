@@ -252,15 +252,40 @@ async function specialLeaveUsers(req, res) {
     });
 
     // Format the result to include special leave details and pagination metadata
-    const allSpecialLeave = leaveHistory.map((item) => ({
-      id: item.id,
-      ...item.employee,
-      ...item.specialLeave,
-      status: item.status,
-      note: item.note,
-      startLeave: item.startLeave,
-      endLeave: item.endLeave,
-    }));
+    const allSpecialLeave = leaveHistory.map((item) => {
+      let additionalFields = {};
+
+      if (item.status === 'APPROVE') {
+        additionalFields.approveBy = item.approveBy;
+      }
+
+      if (item.status === 'REJECT') {
+        additionalFields.rejectBy = item.rejectBy;
+      }
+
+      if (item.status != 'WAITING') {
+        return {
+          id: item.id,
+          ...item.employee,
+          ...item.specialLeave,
+          status: item.status,
+          note: item.note,
+          startLeave: item.startLeave,
+          endLeave: item.endLeave,
+          ...additionalFields,
+        };
+      } else {
+        return {
+          id: item.id,
+          ...item.employee,
+          ...item.specialLeave,
+          status: item.status,
+          note: item.note,
+          startLeave: item.startLeave,
+          endLeave: item.endLeave,
+        };
+      }
+    });
 
     return successResponseWithPage(
       res,
@@ -360,15 +385,40 @@ async function getSpecialLeaveByNik(req, res) {
     });
 
     // Format the result to include special leave details and pagination metadata
-    const allSpecialLeave = leaveHistory.map((item) => ({
-      id: item.id,
-      ...item.employee,
-      ...item.specialLeave,
-      status: item.status,
-      note: item.note,
-      startLeave: item.startLeave,
-      endLeave: item.endLeave,
-    }));
+    const allSpecialLeave = leaveHistory.map((item) => {
+      let additionalFields = {};
+
+      if (item.status === 'APPROVE') {
+        additionalFields.approveBy = item.approveBy;
+      }
+
+      if (item.status === 'REJECT') {
+        additionalFields.rejectBy = item.rejectBy;
+      }
+
+      if (item.status != 'WAITING') {
+        return {
+          id: item.id,
+          ...item.employee,
+          ...item.specialLeave,
+          status: item.status,
+          note: item.note,
+          startLeave: item.startLeave,
+          endLeave: item.endLeave,
+          ...additionalFields,
+        };
+      } else {
+        return {
+          id: item.id,
+          ...item.employee,
+          ...item.specialLeave,
+          status: item.status,
+          note: item.note,
+          startLeave: item.startLeave,
+          endLeave: item.endLeave,
+        };
+      }
+    });
 
     return successResponseWithPage(
       res,
@@ -429,6 +479,8 @@ async function getSpecialLeaveMe(req, res) {
                 note: true,
                 startLeave: true,
                 endLeave: true,
+                approveBy: true,
+                rejectBy: true,
               },
             },
           },
@@ -449,20 +501,50 @@ async function getSpecialLeaveMe(req, res) {
     );
 
     // Format special leave data for the response
-    const allLeaves = paginatedLeaves.map((item) => ({
-      id: item.id,
-      status: item.status,
-      typeOfLeave: {
-        id: item.specialLeave.typeOfLeaveId,
-        name: item.specialLeave.typeOfLeave.name,
-      },
-      leaveTitle: item.specialLeave.leaveTitle,
-      gender: item.specialLeave.gender,
-      amount: item.specialLeave.amount,
-      note: item.note,
-      startLeave: item.startLeave,
-      endLeave: item.endLeave,
-    }));
+    const allLeaves = paginatedLeaves.map((item) => {
+      let additionalFields = {};
+
+      if (item.status === 'APPROVE') {
+        additionalFields.approveBy = item.approveBy;
+      }
+
+      if (item.status === 'REJECT') {
+        additionalFields.rejectBy = item.rejectBy;
+      }
+
+      if (item.status != 'WAITING') {
+        return {
+          id: item.id,
+          status: item.status,
+          typeOfLeave: {
+            id: item.specialLeave.typeOfLeaveId,
+            name: item.specialLeave.typeOfLeave.name,
+          },
+          leaveTitle: item.specialLeave.leaveTitle,
+          gender: item.specialLeave.gender,
+          amount: item.specialLeave.amount,
+          note: item.note,
+          startLeave: item.startLeave,
+          endLeave: item.endLeave,
+          ...additionalFields,
+        };
+      } else {
+        return {
+          id: item.id,
+          status: item.status,
+          typeOfLeave: {
+            id: item.specialLeave.typeOfLeaveId,
+            name: item.specialLeave.typeOfLeave.name,
+          },
+          leaveTitle: item.specialLeave.leaveTitle,
+          gender: item.specialLeave.gender,
+          amount: item.specialLeave.amount,
+          note: item.note,
+          startLeave: item.startLeave,
+          endLeave: item.endLeave,
+        };
+      }
+    });
 
     // Sanitize user data by including only special leave history
     const sanitizedUser = {
@@ -625,6 +707,20 @@ async function approveSpecialLeave(req, res) {
     // Extract the ID of the special leave from the request parameters
     const { id } = req.params;
 
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: approveBy } = employeeData;
+
     // Retrieve information about the special leave based on the ID
     const specialLeaveInfo = await prisma.employeeSpecialLeave.findUnique({
       where: { id: parseInt(id) },
@@ -638,12 +734,22 @@ async function approveSpecialLeave(req, res) {
       return errorResponse(res, 'Special leave is already APPROVE', null, 409);
     }
 
+    if (specialLeaveInfo.status === 'REJECT') {
+      await prisma.employeeSpecialLeave.update({
+        where: { id: parseInt(id) },
+        data: {
+          rejectBy: null,
+        },
+      });
+    }
+
     // Update the special leave status to 'APPROVE'
     const approveSpecialLeave = await prisma.employeeSpecialLeave.update({
       where: { id: parseInt(id) },
       data: {
         status: 'APPROVE',
         note: null,
+        approveBy: approveBy,
       },
     });
 
@@ -666,6 +772,20 @@ async function rejectSpecialLeave(req, res) {
     // Extract the rejection note from the request body
     const { note } = req.body;
 
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: rejectBy } = employeeData;
+
     // Retrieve information about the special leave based on the ID
     const specialLeaveInfo = await prisma.employeeSpecialLeave.findUnique({
       where: { id: parseInt(id) },
@@ -679,12 +799,22 @@ async function rejectSpecialLeave(req, res) {
       return errorResponse(res, 'Special leave is already rejected', null, 409);
     }
 
+    if (specialLeaveInfo.status === 'APPROVE') {
+      await prisma.employeeSpecialLeave.update({
+        where: { id: parseInt(id) },
+        data: {
+          approveBy: null,
+        },
+      });
+    }
+
     // Update the special leave status to 'REJECT' and set the rejection note
     const rejectSpecialLeave = await prisma.employeeSpecialLeave.update({
       where: { id: parseInt(id) },
       data: {
         status: 'REJECT',
         note,
+        rejectBy: rejectBy,
       },
     });
 
