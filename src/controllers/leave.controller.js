@@ -22,7 +22,7 @@ async function getLeaveHistoryNik(req, res) {
     const { nik } = req.params;
 
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage, status, typeOfLeave } = req.query;
+    const { page, perPage = 10, status, typeOfLeave } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
@@ -136,7 +136,7 @@ async function getLeaveHistoryMe(req, res) {
     // Extract user ID from the authenticated user
     const userId = req.user.id;
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage } = req.query;
+    const { page, perPage = 10 } = req.query;
     // Retrieve user-specific leave information using Prisma
     const userLeaveInfo = await prisma.user.findUnique({
       where: { id: userId },
@@ -166,6 +166,8 @@ async function getLeaveHistoryMe(req, res) {
                   },
                 },
                 note: true,
+                approveBy: true,
+                rejectBy: true,
               },
             },
           },
@@ -186,13 +188,36 @@ async function getLeaveHistoryMe(req, res) {
     );
 
     // Transform leave data for response
-    const allLeaves = paginatedLeaves.map((item) => ({
-      ...item.leave,
-      leaveEmployeeId: item.id,
-      status: item.status,
-      leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
-      note: item.note,
-    }));
+    const allLeaves = paginatedLeaves.map((item) => {
+      let additionalFields = {};
+
+      if (item.status === 'APPROVE') {
+        additionalFields.approveBy = item.approveBy;
+      }
+
+      if (item.status === 'REJECT') {
+        additionalFields.rejectBy = item.rejectBy;
+      }
+
+      if (item.status != 'WAITING') {
+        return {
+          ...item.leave,
+          leaveEmployeeId: item.id,
+          status: item.status,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+          ...additionalFields,
+        };
+      } else {
+        return {
+          ...item.leave,
+          leaveEmployeeId: item.id,
+          status: item.status,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+        };
+      }
+    });
 
     // Create a sanitized user object
     const sanitizedUser = {
@@ -222,7 +247,7 @@ async function getLeaveHistoryMe(req, res) {
 async function mandatoryLeave(req, res) {
   try {
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage } = req.query;
+    const { page, perPage = 10 } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
@@ -284,7 +309,7 @@ async function mandatoryLeave(req, res) {
 async function optionalLeave(req, res) {
   try {
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage } = req.query;
+    const { page, perPage = 10 } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
@@ -533,7 +558,19 @@ async function rejectOptionalLeave(req, res) {
     // Extract necessary data from the request parameters and user information
     const { id } = req.params;
     const { note } = req.body;
-    const userId = req.user.id;
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: rejectBy } = employeeData;
 
     // // Retrieve the employeeNik of the requesting user
     // const employeeNik = await prisma.user
@@ -579,6 +616,7 @@ async function rejectOptionalLeave(req, res) {
       data: {
         status: 'REJECT',
         note: note,
+        rejectBy: rejectBy,
       },
     });
 
@@ -712,6 +750,20 @@ async function approvePersonalLeave(req, res) {
     // Extract the leaveEmployee ID from the request parameters
     const { id } = req.params;
 
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: approveBy } = employeeData;
+
     // Retrieve relevant information about the leaveEmployee and associated leave
     const leaveEmployeeInfo = await prisma.leaveEmployee.findUnique({
       where: {
@@ -741,12 +793,22 @@ async function approvePersonalLeave(req, res) {
       return errorResponse(res, 'Leave status is already APPROVE', null, 409);
     }
 
+    if (leaveEmployeeInfo.status === 'REJECT') {
+      await prisma.leaveEmployee.update({
+        where: { id: parseInt(id) },
+        data: {
+          rejectBy: null,
+        },
+      });
+    }
+
     // Update the leaveEmployee status to APPROVE
     const updateStatus = await prisma.leaveEmployee.update({
       where: { id: parseInt(id) },
       data: {
         status: 'APPROVE',
         note: null,
+        approveBy: approveBy,
       },
     });
 
@@ -781,6 +843,19 @@ async function rejectPersonalLeave(req, res) {
     // Extract the leaveEmployee ID from the request parameters
     const { note } = req.body;
     const { id } = req.params;
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: rejectBy } = employeeData;
 
     // Retrieve relevant information about the leaveEmployee and associated leave
     const leaveEmployeeInfo = await prisma.leaveEmployee.findUnique({
@@ -811,12 +886,22 @@ async function rejectPersonalLeave(req, res) {
       return errorResponse(res, 'Leave status is already REJECTED', null, 409);
     }
 
+    if (leaveEmployeeInfo.status === 'APPROVE') {
+      await prisma.leaveEmployee.update({
+        where: { id: parseInt(id) },
+        data: {
+          approveBy: null,
+        },
+      });
+    }
+
     // Update the leaveEmployee status to REJECT
     const updateStatus = await prisma.leaveEmployee.update({
       where: { id: parseInt(id) },
       data: {
         status: 'REJECT',
         note: note,
+        rejectBy: rejectBy,
       },
     });
 
@@ -851,7 +936,7 @@ async function rejectPersonalLeave(req, res) {
 async function allLeaves(req, res) {
   try {
     // Extract query parameters from the request
-    const { page, perPage, search, status, typeOfLeave } = req.query;
+    const { page, perPage = 10, search, status, typeOfLeave } = req.query;
 
     // Perform pagination using the paginate utility function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
@@ -932,14 +1017,38 @@ async function allLeaves(req, res) {
     });
 
     // Format the result to include leaveEmployeeId and leaveUse
-    const allLeave = leaveHistory.map((item) => ({
-      ...item.employee,
-      ...item.leave,
-      status: item.status,
-      leaveEmployeeId: item.id,
-      leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
-      note: item.note,
-    }));
+    const allLeave = leaveHistory.map((item) => {
+      let additionalFields = {};
+
+      if (item.status === 'APPROVE') {
+        additionalFields.approveBy = item.approveBy;
+      }
+
+      if (item.status === 'REJECT') {
+        additionalFields.rejectBy = item.rejectBy;
+      }
+
+      if (item.status != 'WAITING') {
+        return {
+          ...item.employee,
+          ...item.leave,
+          status: item.status,
+          leaveEmployeeId: item.id,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+          ...additionalFields,
+        };
+      } else {
+        return {
+          ...item.employee,
+          ...item.leave,
+          status: item.status,
+          leaveEmployeeId: item.id,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+        };
+      }
+    });
 
     return successResponseWithPage(res, 'Successfully get all leave history', allLeave, 200, {
       ...pagination.meta,
@@ -1002,6 +1111,68 @@ async function updateEmailPreference(req, res) {
     return successResponse(res, 'Successfully update receive email', updatedEmailPreference);
   } catch {
     return errorResponse(res, 'Failed to update receive email', null);
+  }
+}
+
+async function getCollectiveLeave(req, res) {
+  try {
+    const { page, perPage = 10, search, typeOfLeave } = req.query;
+    const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
+
+    const filter = {};
+    if (search) {
+      filter.reason = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+    if (typeOfLeave) {
+      filter.typeOfLeave = {
+        name: {
+          contains: typeOfLeave,
+          mode: 'insensitive',
+        },
+      };
+    }
+
+    const leave = await prisma.leave.findMany({
+      where: { typeOfLeaveId: { in: [1, 2] }, ...filter },
+      orderBy: { updated_at: 'desc' },
+      include: {
+        typeOfLeave: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
+    });
+
+    const allCollectiveLeave = leave.map((item) => ({
+      ...item.typeOfLeave,
+      startLeave: item.startLeave,
+      endLeave: item.endLeave,
+      leaveUse: calculateLeaveAmount(item.startLeave, item.endLeave),
+      reason: item.reason,
+    }));
+
+    const totalPage = await prisma.leave.count({
+      where: { typeOfLeaveId: { in: [1, 2] }, ...filter },
+    });
+
+    const lastPage = Math.ceil(totalPage / perPage);
+
+    return successResponseWithPage(
+      res,
+      'Successfully get all collective leave',
+      allCollectiveLeave,
+      200,
+      { ...pagination.meta, total: totalPage, lastPage: lastPage },
+    );
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to get leave history', null);
   }
 }
 
@@ -1201,192 +1372,192 @@ async function sendEmailLeaveMandatoryById(req, res) {
   }
 }
 
-// async function sendEmailLeaveOptionalById(req, res) {
-//   try {
-//     const { id } = req.params;
+async function sendEmailLeaveOptionalById(req, res) {
+  try {
+    const { id } = req.params;
 
-//     if (!id) {
-//       return errorResponse(res, 'Leave ID is missing in the request', '', 400);
-//     }
+    if (!id) {
+      return errorResponse(res, 'Leave ID is missing in the request', '', 400);
+    }
 
-//     // Fetch the leave based on id
-//     const leave = await prisma.leave.findUnique({
-//       where: {
-//         id: parseInt(id),
-//       },
-//       include: {
-//         leaveEmployees: {
-//           include: {
-//             employee: {
-//               include: {
-//                 user: {
-//                   select: {
-//                     email: true,
-//                   },
-//                 },
-//               },
-//             },
-//           },
-//         },
-//       },
-//     });
+    // Fetch the leave based on id
+    const leave = await prisma.leave.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+      include: {
+        leaveEmployees: {
+          include: {
+            employee: {
+              include: {
+                user: {
+                  select: {
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
-//     console.log('Leave data:', leave);
+    console.log('Leave data:', leave);
 
-//     if (!leave) {
-//       return errorResponse(res, 'Leave not found', '', 404);
-//     }
+    if (!leave) {
+      return errorResponse(res, 'Leave not found', '', 404);
+    }
 
-//     if (leave.typeOfLeaveId !== 2) {
-//       return errorResponse(res, 'Leave type is not Optional', '', 400);
-//     }
+    if (leave.typeOfLeaveId !== 2) {
+      return errorResponse(res, 'Leave type is not Optional', '', 400);
+    }
 
-//     const employee = await prisma.employee.findUnique({
-//       where: {
-//         userId: req.user.id,
-//       },
-//       select: {
-//         name: true,
-//       },
-//     });
+    const employee = await prisma.employee.findUnique({
+      where: {
+        userId: req.user.id,
+      },
+      select: {
+        name: true,
+      },
+    });
 
-//     const senderName = employee.name;
+    const senderName = employee.name;
 
-//     // Construct an array of recipient emails
-//     const recipientEmails = leave.leaveEmployees.map(({ employee }) => employee.user.email);
+    // Construct an array of recipient emails
+    const recipientEmails = leave.leaveEmployees.map(({ employee }) => employee.user.email);
 
-//     // Periksa nilai startLeave dan endLeave
-//     console.log('Start Date:', leave.startLeave);
-//     console.log('End Date:', leave.endLeave);
+    // Periksa nilai startLeave dan endLeave
+    console.log('Start Date:', leave.startLeave);
+    console.log('End Date:', leave.endLeave);
 
-//     // Ubah ke format yang diinginkan
-//     const startDate = new Date(leave.startLeave);
-//     const endDate = new Date(leave.endLeave);
-//     console.log('Parsed Start Date:', startDate);
-//     console.log('Parsed End Date:', endDate);
+    // Ubah ke format yang diinginkan
+    const startDate = new Date(leave.startLeave);
+    const endDate = new Date(leave.endLeave);
+    console.log('Parsed Start Date:', startDate);
+    console.log('Parsed End Date:', endDate);
 
-//     const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
-//       month: 'long',
-//     })} ${startDate.getFullYear()}`;
-//     const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
-//       month: 'long',
-//     })} ${endDate.getFullYear()}`;
+    const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${startDate.getFullYear()}`;
+    const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${endDate.getFullYear()}`;
 
-//     console.log('Formatted Start Leave:', formattedStartDate);
-//     console.log('Formatted End Leave:', formattedEndDate);
+    console.log('Formatted Start Leave:', formattedStartDate);
+    console.log('Formatted End Leave:', formattedEndDate);
 
-//     const reason = leave.reason;
+    const reason = leave.reason;
 
-//     // Create Nodemailer transporter
-//     const transporter = nodemailer.createTransport({
-//       service: 'gmail',
-//       host: 'smtp.gmail.com',
-//       port: 587,
-//       secure: false,
-//       auth: {
-//         user: process.env.GMAIL_USER,
-//         pass: process.env.GMAIL_PASSWORD,
-//       },
-//     });
+    // Create Nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
 
-//     // Construct email options
-//     const mailOptions = {
-//       from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
-//       bcc: recipientEmails.join(','),
-//       subject: 'Leave Notification',
-//       html: `<html>
-//       <head>
-//         <style>
-//           body {
-//             font-family: Arial, sans-serif;
-//             margin: 0;
-//             padding: 0;
-//             background-color: #f7f7f7;
-//           }
-//           .container {
-//             max-width: 600px;
-//             margin: 20px auto;
-//             background-color: #fff;
-//             padding: 20px;
-//             border-radius: 8px;
-//             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-//           }
-//           .header {
-//             background-color: #007bff;
-//             color: #fff;
-//             text-align: center;
-//             padding: 20px 0;
-//             border-top-left-radius: 8px;
-//             border-top-right-radius: 8px;
-//           }
-//           .header h1 {
-//             margin: 0;
-//             font-size: 24px;
-//           }
-//           .content {
-//             padding: 20px;
-//           }
-//           .content p {
-//             margin: 10px 0;
-//           }
-//           .credentials {
-//             padding: 10px 20px;
-//             border-radius: 4px;
-//             text-align: start;
-//             margin: 0 auto;
-//           }
-//           .credentials strong {
-//             font-weight: bold;
-//           }
-//           .footer {
-//             text-align: center;
-//             margin-top: 20px;
-//             color: #666;
-//           }
-//         </style>
-//       </head>
-//       <body>
-//         <div class="container">
-//           <div class="header">
-//             <h1>Mandatory Leave Information</h1>
-//           </div>
-//           <div class="content">
-//             <p>There would be a <b>${reason}</b> leave during this period:</p>
-//             <table class="credentials">
-//               <tr>
-//                 <td><strong>From</strong></td>
-//                 <td><strong>:</strong></td>
-//                 <td>${formattedStartDate}</td>
-//               </tr>
-//               <tr>
-//                 <td><strong>Until</strong></td>
-//                 <td><strong>:</strong></td>
-//                 <td>${formattedEndDate}</td>
-//               </tr>
-//             </table>
-//           </div>
-//           <div class="footer">
-//             <p>
-//               Best regards, <br />
-//               The Company
-//             </p>
-//             <p>This email was sent by ${senderName}</p>
-//           </div>
-//         </div>
-//       </body>
-//     </html>`,
-//     };
+    // Construct email options
+    const mailOptions = {
+      from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
+      bcc: recipientEmails.join(','),
+      subject: 'Leave Notification',
+      html: `<html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+          }
+          .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+          }
+          .content {
+            padding: 20px;
+          }
+          .content p {
+            margin: 10px 0;
+          }
+          .credentials {
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-align: start;
+            margin: 0 auto;
+          }
+          .credentials strong {
+            font-weight: bold;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Mandatory Leave Information</h1>
+          </div>
+          <div class="content">
+            <p>There would be a <b>${reason}</b> leave during this period:</p>
+            <table class="credentials">
+              <tr>
+                <td><strong>From</strong></td>
+                <td><strong>:</strong></td>
+                <td>${formattedStartDate}</td>
+              </tr>
+              <tr>
+                <td><strong>Until</strong></td>
+                <td><strong>:</strong></td>
+                <td>${formattedEndDate}</td>
+              </tr>
+            </table>
+          </div>
+          <div class="footer">
+            <p>
+              Best regards, <br />
+              The Company
+            </p>
+            <p>This email was sent by ${senderName}</p>
+          </div>
+        </div>
+      </body>
+    </html>`,
+    };
 
-//     // Send the email
-//     await transporter.sendMail(mailOptions);
+    // Send the email
+    await transporter.sendMail(mailOptions);
 
-//     // Respond with success message
-//     return successResponse(res, 'Leave email sent successfully', '', 200);
-//   } catch (error) {
-//     console.error('Error sending leave email:', error);
-//     return errorResponse(res, 'An error occurred while sending leave email', '', 500);
-//   }
-// }
+    // Respond with success message
+    return successResponse(res, 'Leave email sent successfully', '', 200);
+  } catch (error) {
+    console.error('Error sending leave email:', error);
+    return errorResponse(res, 'An error occurred while sending leave email', '', 500);
+  }
+}
 
 module.exports = {
   getLeaveHistoryNik,
@@ -1401,6 +1572,7 @@ module.exports = {
   allLeaves,
   getCanReceiveEmailLeave,
   updateEmailPreference,
+  getCollectiveLeave,
   sendEmailLeaveMandatoryById,
   // sendEmailLeaveOptionalById,
 };

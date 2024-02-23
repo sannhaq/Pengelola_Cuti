@@ -98,6 +98,9 @@ CREATE TABLE "Leave" (
     "startLeave" DATE NOT NULL,
     "endLeave" DATE NOT NULL,
     "reason" TEXT NOT NULL,
+    "emailSent" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Leave_pkey" PRIMARY KEY ("id")
 );
@@ -119,6 +122,8 @@ CREATE TABLE "LeaveEmployee" (
     "employeeNik" TEXT NOT NULL,
     "status" "Status" NOT NULL DEFAULT 'WAITING',
     "note" TEXT,
+    "approveBy" TEXT,
+    "rejectBy" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
