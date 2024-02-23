@@ -165,6 +165,8 @@ async function getLeaveHistoryMe(req, res) {
                   },
                 },
                 note: true,
+                approveBy: true,
+                rejectBy: true,
               },
             },
           },
@@ -185,13 +187,36 @@ async function getLeaveHistoryMe(req, res) {
     );
 
     // Transform leave data for response
-    const allLeaves = paginatedLeaves.map((item) => ({
-      ...item.leave,
-      leaveEmployeeId: item.id,
-      status: item.status,
-      leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
-      note: item.note,
-    }));
+    const allLeaves = paginatedLeaves.map((item) => {
+      let additionalFields = {};
+
+      if (item.status === 'APPROVE') {
+        additionalFields.approveBy = item.approveBy;
+      }
+
+      if (item.status === 'REJECT') {
+        additionalFields.rejectBy = item.rejectBy;
+      }
+
+      if (item.status != 'WAITING') {
+        return {
+          ...item.leave,
+          leaveEmployeeId: item.id,
+          status: item.status,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+          ...additionalFields,
+        };
+      } else {
+        return {
+          ...item.leave,
+          leaveEmployeeId: item.id,
+          status: item.status,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+        };
+      }
+    });
 
     // Create a sanitized user object
     const sanitizedUser = {
@@ -532,7 +557,19 @@ async function rejectOptionalLeave(req, res) {
     // Extract necessary data from the request parameters and user information
     const { id } = req.params;
     const { note } = req.body;
-    const userId = req.user.id;
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: rejectBy } = employeeData;
 
     // // Retrieve the employeeNik of the requesting user
     // const employeeNik = await prisma.user
@@ -578,6 +615,7 @@ async function rejectOptionalLeave(req, res) {
       data: {
         status: 'REJECT',
         note: note,
+        rejectBy: rejectBy,
       },
     });
 
@@ -711,6 +749,20 @@ async function approvePersonalLeave(req, res) {
     // Extract the leaveEmployee ID from the request parameters
     const { id } = req.params;
 
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: approveBy } = employeeData;
+
     // Retrieve relevant information about the leaveEmployee and associated leave
     const leaveEmployeeInfo = await prisma.leaveEmployee.findUnique({
       where: {
@@ -740,12 +792,22 @@ async function approvePersonalLeave(req, res) {
       return errorResponse(res, 'Leave status is already APPROVE', null, 409);
     }
 
+    if (leaveEmployeeInfo.status === 'REJECT') {
+      await prisma.leaveEmployee.update({
+        where: { id: parseInt(id) },
+        data: {
+          rejectBy: null,
+        },
+      });
+    }
+
     // Update the leaveEmployee status to APPROVE
     const updateStatus = await prisma.leaveEmployee.update({
       where: { id: parseInt(id) },
       data: {
         status: 'APPROVE',
         note: null,
+        approveBy: approveBy,
       },
     });
 
@@ -780,6 +842,19 @@ async function rejectPersonalLeave(req, res) {
     // Extract the leaveEmployee ID from the request parameters
     const { note } = req.body;
     const { id } = req.params;
+    const { user } = req;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!employeeData) {
+      return errorResponse(res, 'Employee data not found for the current user', '', 404);
+    }
+
+    const { name: rejectBy } = employeeData;
 
     // Retrieve relevant information about the leaveEmployee and associated leave
     const leaveEmployeeInfo = await prisma.leaveEmployee.findUnique({
@@ -810,12 +885,22 @@ async function rejectPersonalLeave(req, res) {
       return errorResponse(res, 'Leave status is already REJECTED', null, 409);
     }
 
+    if (leaveEmployeeInfo.status === 'APPROVE') {
+      await prisma.leaveEmployee.update({
+        where: { id: parseInt(id) },
+        data: {
+          approveBy: null,
+        },
+      });
+    }
+
     // Update the leaveEmployee status to REJECT
     const updateStatus = await prisma.leaveEmployee.update({
       where: { id: parseInt(id) },
       data: {
         status: 'REJECT',
         note: note,
+        rejectBy: rejectBy,
       },
     });
 
@@ -931,14 +1016,38 @@ async function allLeaves(req, res) {
     });
 
     // Format the result to include leaveEmployeeId and leaveUse
-    const allLeave = leaveHistory.map((item) => ({
-      ...item.employee,
-      ...item.leave,
-      status: item.status,
-      leaveEmployeeId: item.id,
-      leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
-      note: item.note,
-    }));
+    const allLeave = leaveHistory.map((item) => {
+      let additionalFields = {};
+
+      if (item.status === 'APPROVE') {
+        additionalFields.approveBy = item.approveBy;
+      }
+
+      if (item.status === 'REJECT') {
+        additionalFields.rejectBy = item.rejectBy;
+      }
+
+      if (item.status != 'WAITING') {
+        return {
+          ...item.employee,
+          ...item.leave,
+          status: item.status,
+          leaveEmployeeId: item.id,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+          ...additionalFields,
+        };
+      } else {
+        return {
+          ...item.employee,
+          ...item.leave,
+          status: item.status,
+          leaveEmployeeId: item.id,
+          leaveUse: calculateLeaveAmount(item.leave.startLeave, item.leave.endLeave),
+          note: item.note,
+        };
+      }
+    });
 
     return successResponseWithPage(res, 'Successfully get all leave history', allLeave, 200, {
       ...pagination.meta,
