@@ -154,6 +154,8 @@ CREATE TABLE "EmployeeSpecialLeave" (
     "startLeave" DATE NOT NULL,
     "endLeave" DATE NOT NULL,
     "note" TEXT,
+    "approveBy" TEXT,
+    "rejectBy" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

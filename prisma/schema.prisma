@@ -167,6 +167,8 @@ model EmployeeSpecialLeave {
   startLeave     DateTime     @db.Date
   endLeave       DateTime     @db.Date
   note           String?
+  approveBy      String?
+  rejectBy       String?
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
 }
