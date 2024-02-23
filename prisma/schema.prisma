@@ -114,6 +114,8 @@ model Leave {
   startLeave     DateTime        @db.Date
   endLeave       DateTime        @db.Date
   reason         String
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
   leaveEmployees LeaveEmployee[]
   deductedLeaves DeductedLeave[]
 }

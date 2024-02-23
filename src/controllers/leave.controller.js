@@ -21,7 +21,7 @@ async function getLeaveHistoryNik(req, res) {
     const { nik } = req.params;
 
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage, status, typeOfLeave } = req.query;
+    const { page, perPage = 10, status, typeOfLeave } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
@@ -135,7 +135,7 @@ async function getLeaveHistoryMe(req, res) {
     // Extract user ID from the authenticated user
     const userId = req.user.id;
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage } = req.query;
+    const { page, perPage = 10 } = req.query;
     // Retrieve user-specific leave information using Prisma
     const userLeaveInfo = await prisma.user.findUnique({
       where: { id: userId },
@@ -221,7 +221,7 @@ async function getLeaveHistoryMe(req, res) {
 async function mandatoryLeave(req, res) {
   try {
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage } = req.query;
+    const { page, perPage = 10 } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
@@ -283,7 +283,7 @@ async function mandatoryLeave(req, res) {
 async function optionalLeave(req, res) {
   try {
     // Extract page and perPage from query parameters for pagination
-    const { page, perPage } = req.query;
+    const { page, perPage = 10 } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
@@ -850,7 +850,7 @@ async function rejectPersonalLeave(req, res) {
 async function allLeaves(req, res) {
   try {
     // Extract query parameters from the request
-    const { page, perPage, search, status, typeOfLeave } = req.query;
+    const { page, perPage = 10, search, status, typeOfLeave } = req.query;
 
     // Perform pagination using the paginate utility function
     const pagination = await paginate(prisma.leaveEmployee, { page, perPage });
@@ -1004,6 +1004,71 @@ async function updateEmailPreference(req, res) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function getCollectiveLeave(req, res) {
+  try {
+    const { page, perPage = 10, search, typeOfLeave } = req.query;
+    const pagination = await paginate(prisma.typeOfLeave, { page, perPage });
+
+    const filter = {};
+    if (search) {
+      filter.reason = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+    if (typeOfLeave) {
+      filter.typeOfLeave = {
+        name: {
+          contains: typeOfLeave,
+          mode: 'insensitive',
+        },
+      };
+    }
+
+    const leave = await prisma.leave.findMany({
+      where: { typeOfLeaveId: { in: [1, 2] }, ...filter },
+      orderBy: { updated_at: 'desc' },
+      include: {
+        typeOfLeave: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      skip: (pagination.meta.currPage - 1) * pagination.meta.perPage,
+      take: pagination.meta.perPage,
+    });
+
+    const allCollectiveLeave = leave.map((item) => ({
+      ...item.typeOfLeave,
+      startLeave: item.startLeave,
+      endLeave: item.endLeave,
+      leaveUse: calculateLeaveAmount(item.startLeave, item.endLeave),
+      reason: item.reason,
+    }));
+
+    const totalPage = await prisma.leave.count({
+      where: { typeOfLeaveId: { in: [1, 2] }, ...filter },
+    });
+
+    const lastPage = Math.ceil(totalPage / perPage);
+
+    return successResponseWithPage(
+      res,
+      'Successfully get all collective leave',
+      allCollectiveLeave,
+      200,
+      { ...pagination.meta, total: totalPage, lastPage: lastPage },
+    );
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to get leave history', null);
+  }
+}
 module.exports = {
   getLeaveHistoryNik,
   getLeaveHistoryMe,
@@ -1017,4 +1082,5 @@ module.exports = {
   allLeaves,
   getCanReceiveEmailLeave,
   updateEmailPreference,
+  getCollectiveLeave,
 };
