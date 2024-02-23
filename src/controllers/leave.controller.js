@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
+const nodemailer = require('nodemailer');
 const {
   errorResponse,
   successResponse,
@@ -1004,6 +1005,389 @@ async function updateEmailPreference(req, res) {
   }
 }
 
+async function sendEmailLeaveMandatoryById(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return errorResponse(res, 'Leave ID is missing in the request', '', 400);
+    }
+
+    // Fetch the leave based on id
+    const leave = await prisma.leave.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+      include: {
+        leaveEmployees: {
+          include: {
+            employee: {
+              include: {
+                user: {
+                  select: {
+                    email: true,
+                    role: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    console.log('Leave data:', leave);
+
+    if (!leave) {
+      return errorResponse(res, 'Leave not found', '', 404);
+    }
+
+    if (leave.typeOfLeaveId !== 1) {
+      return errorResponse(res, 'Leave type is not Mandatory', '', 400);
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: {
+        userId: req.user.id,
+      },
+      select: {
+        name: true,
+      },
+    });
+
+    const senderName = employee.name;
+
+    // Construct an array of recipient emails
+
+    const recipientEmails = leave.leaveEmployees
+      .filter(({ employee }) => {
+        const userEmail = employee.user.email;
+        const roleId = employee.user.role.id;
+        console.log(`Email: ${userEmail}, Role ID: ${roleId}`);
+        return roleId !== 1;
+      })
+      .map(({ employee }) => employee.user.email);
+
+    // Periksa nilai startLeave dan endLeave
+    console.log('Start Date:', leave.startLeave);
+    console.log('End Date:', leave.endLeave);
+
+    // Ubah ke format yang diinginkan
+    const startDate = new Date(leave.startLeave);
+    const endDate = new Date(leave.endLeave);
+    console.log('Parsed Start Date:', startDate);
+    console.log('Parsed End Date:', endDate);
+
+    const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${startDate.getFullYear()}`;
+    const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${endDate.getFullYear()}`;
+
+    console.log('Formatted Start Leave:', formattedStartDate);
+    console.log('Formatted End Leave:', formattedEndDate);
+
+    const reason = leave.reason;
+
+    // Create Nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    // Construct email options
+    const mailOptions = {
+      from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
+      bcc: recipientEmails.join(','),
+      subject: 'Leave Notification',
+      html: `<html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+          }
+          .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+          }
+          .content {
+            padding: 20px;
+          }
+          .content p {
+            margin: 10px 0;
+          }
+          .credentials {
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-align: start;
+            margin: 0 auto;
+          }
+          .credentials strong {
+            font-weight: bold;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Mandatory Leave Information</h1>
+          </div>
+          <div class="content">
+            <p>There would be a <b>${reason}</b> leave during this period:</p>
+            <table class="credentials">
+              <tr>
+                <td><strong>From</strong></td>
+                <td><strong>:</strong></td>
+                <td>${formattedStartDate}</td>
+              </tr>
+              <tr>
+                <td><strong>Until</strong></td>
+                <td><strong>:</strong></td>
+                <td>${formattedEndDate}</td>
+              </tr>
+            </table>
+          </div>
+          <div class="footer">
+            <p>
+              Best regards, <br />
+              The Company
+            </p>
+            <p>This email was sent by ${senderName}</p>
+          </div>
+        </div>
+      </body>
+    </html>`,
+    };
+
+    // Send the email
+    await transporter.sendMail(mailOptions);
+
+    // Respond with success message
+    return successResponse(res, 'Leave email sent successfully', '', 200);
+  } catch (error) {
+    console.error('Error sending leave email:', error);
+    return errorResponse(res, 'An error occurred while sending leave email', '', 500);
+  }
+}
+
+// async function sendEmailLeaveOptionalById(req, res) {
+//   try {
+//     const { id } = req.params;
+
+//     if (!id) {
+//       return errorResponse(res, 'Leave ID is missing in the request', '', 400);
+//     }
+
+//     // Fetch the leave based on id
+//     const leave = await prisma.leave.findUnique({
+//       where: {
+//         id: parseInt(id),
+//       },
+//       include: {
+//         leaveEmployees: {
+//           include: {
+//             employee: {
+//               include: {
+//                 user: {
+//                   select: {
+//                     email: true,
+//                   },
+//                 },
+//               },
+//             },
+//           },
+//         },
+//       },
+//     });
+
+//     console.log('Leave data:', leave);
+
+//     if (!leave) {
+//       return errorResponse(res, 'Leave not found', '', 404);
+//     }
+
+//     if (leave.typeOfLeaveId !== 2) {
+//       return errorResponse(res, 'Leave type is not Optional', '', 400);
+//     }
+
+//     const employee = await prisma.employee.findUnique({
+//       where: {
+//         userId: req.user.id,
+//       },
+//       select: {
+//         name: true,
+//       },
+//     });
+
+//     const senderName = employee.name;
+
+//     // Construct an array of recipient emails
+//     const recipientEmails = leave.leaveEmployees.map(({ employee }) => employee.user.email);
+
+//     // Periksa nilai startLeave dan endLeave
+//     console.log('Start Date:', leave.startLeave);
+//     console.log('End Date:', leave.endLeave);
+
+//     // Ubah ke format yang diinginkan
+//     const startDate = new Date(leave.startLeave);
+//     const endDate = new Date(leave.endLeave);
+//     console.log('Parsed Start Date:', startDate);
+//     console.log('Parsed End Date:', endDate);
+
+//     const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+//       month: 'long',
+//     })} ${startDate.getFullYear()}`;
+//     const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+//       month: 'long',
+//     })} ${endDate.getFullYear()}`;
+
+//     console.log('Formatted Start Leave:', formattedStartDate);
+//     console.log('Formatted End Leave:', formattedEndDate);
+
+//     const reason = leave.reason;
+
+//     // Create Nodemailer transporter
+//     const transporter = nodemailer.createTransport({
+//       service: 'gmail',
+//       host: 'smtp.gmail.com',
+//       port: 587,
+//       secure: false,
+//       auth: {
+//         user: process.env.GMAIL_USER,
+//         pass: process.env.GMAIL_PASSWORD,
+//       },
+//     });
+
+//     // Construct email options
+//     const mailOptions = {
+//       from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
+//       bcc: recipientEmails.join(','),
+//       subject: 'Leave Notification',
+//       html: `<html>
+//       <head>
+//         <style>
+//           body {
+//             font-family: Arial, sans-serif;
+//             margin: 0;
+//             padding: 0;
+//             background-color: #f7f7f7;
+//           }
+//           .container {
+//             max-width: 600px;
+//             margin: 20px auto;
+//             background-color: #fff;
+//             padding: 20px;
+//             border-radius: 8px;
+//             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+//           }
+//           .header {
+//             background-color: #007bff;
+//             color: #fff;
+//             text-align: center;
+//             padding: 20px 0;
+//             border-top-left-radius: 8px;
+//             border-top-right-radius: 8px;
+//           }
+//           .header h1 {
+//             margin: 0;
+//             font-size: 24px;
+//           }
+//           .content {
+//             padding: 20px;
+//           }
+//           .content p {
+//             margin: 10px 0;
+//           }
+//           .credentials {
+//             padding: 10px 20px;
+//             border-radius: 4px;
+//             text-align: start;
+//             margin: 0 auto;
+//           }
+//           .credentials strong {
+//             font-weight: bold;
+//           }
+//           .footer {
+//             text-align: center;
+//             margin-top: 20px;
+//             color: #666;
+//           }
+//         </style>
+//       </head>
+//       <body>
+//         <div class="container">
+//           <div class="header">
+//             <h1>Mandatory Leave Information</h1>
+//           </div>
+//           <div class="content">
+//             <p>There would be a <b>${reason}</b> leave during this period:</p>
+//             <table class="credentials">
+//               <tr>
+//                 <td><strong>From</strong></td>
+//                 <td><strong>:</strong></td>
+//                 <td>${formattedStartDate}</td>
+//               </tr>
+//               <tr>
+//                 <td><strong>Until</strong></td>
+//                 <td><strong>:</strong></td>
+//                 <td>${formattedEndDate}</td>
+//               </tr>
+//             </table>
+//           </div>
+//           <div class="footer">
+//             <p>
+//               Best regards, <br />
+//               The Company
+//             </p>
+//             <p>This email was sent by ${senderName}</p>
+//           </div>
+//         </div>
+//       </body>
+//     </html>`,
+//     };
+
+//     // Send the email
+//     await transporter.sendMail(mailOptions);
+
+//     // Respond with success message
+//     return successResponse(res, 'Leave email sent successfully', '', 200);
+//   } catch (error) {
+//     console.error('Error sending leave email:', error);
+//     return errorResponse(res, 'An error occurred while sending leave email', '', 500);
+//   }
+// }
+
 module.exports = {
   getLeaveHistoryNik,
   getLeaveHistoryMe,
@@ -1017,4 +1401,6 @@ module.exports = {
   allLeaves,
   getCanReceiveEmailLeave,
   updateEmailPreference,
+  sendEmailLeaveMandatoryById,
+  // sendEmailLeaveOptionalById,
 };
