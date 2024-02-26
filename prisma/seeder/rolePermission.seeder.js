@@ -323,6 +323,16 @@ const rolePermissions = [
     roleId: 3,
     permissionId: 38,
   },
+  {
+    // 39
+    roleId: 3,
+    permissionId: 39,
+  },
+  {
+    // 40
+    roleId: 2,
+    permissionId: 39,
+  },
 ];
 
 async function rolePermissionSeed() {

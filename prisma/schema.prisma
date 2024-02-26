@@ -205,7 +205,7 @@ model EmailPreference {
 
 model WebSetting {
   id           Int    @id @default(autoincrement())
-  logoImage    String
+  picture      String
   ipAddress    String
   webColorCode String
 }

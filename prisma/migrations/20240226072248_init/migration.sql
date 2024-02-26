@@ -202,7 +202,7 @@ CREATE TABLE "EmailPreference" (
 -- CreateTable
 CREATE TABLE "WebSetting" (
     "id" SERIAL NOT NULL,
-    "logoImage" TEXT NOT NULL,
+    "picture" TEXT NOT NULL,
     "ipAddress" TEXT NOT NULL,
     "webColorCode" TEXT NOT NULL,
 

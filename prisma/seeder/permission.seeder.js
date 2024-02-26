@@ -206,6 +206,11 @@ const permissions = [
     name: 'Send Email for Leave',
     created_at: new Date(),
   },
+  {
+    // 39
+    name: 'Setting Website',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {
