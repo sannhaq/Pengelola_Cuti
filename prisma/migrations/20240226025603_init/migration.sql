@@ -199,6 +199,16 @@ CREATE TABLE "EmailPreference" (
     CONSTRAINT "EmailPreference_pkey" PRIMARY KEY ("userId")
 );
 
+-- CreateTable
+CREATE TABLE "WebSetting" (
+    "id" SERIAL NOT NULL,
+    "logoImage" TEXT NOT NULL,
+    "ipAddress" TEXT NOT NULL,
+    "webColorCode" TEXT NOT NULL,
+
+    CONSTRAINT "WebSetting_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
