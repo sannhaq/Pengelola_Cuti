@@ -1,11 +1,13 @@
 const { date } = require('zod');
 const { prisma } = require('../configs/prisma.config');
+const nodemailer = require('nodemailer');
 const {
   successResponseWithPage,
   errorResponse,
   paginate,
   successResponse,
 } = require('../utils/helper.util');
+const { leaveRejectEmailTemplate, getLeaveApprovalEmailTemplate } = require('../utils/email.util');
 
 /**
  * @param {import('express').Request} req
@@ -726,6 +728,23 @@ async function approveSpecialLeave(req, res) {
       where: { id: parseInt(id) },
       select: {
         status: true,
+        startLeave: true,
+        endLeave: true,
+        employee: {
+          select: {
+            name: true,
+            user: {
+              select: {
+                email: true,
+              },
+            },
+          },
+        },
+        specialLeave: {
+          select: {
+            leaveTitle: true,
+          },
+        },
       },
     });
 
@@ -752,6 +771,51 @@ async function approveSpecialLeave(req, res) {
         approveBy: approveBy,
       },
     });
+
+    const emailData = {
+      employeeName: specialLeaveInfo.employee.name,
+      reason: specialLeaveInfo.specialLeave.leaveTitle,
+      startLeave: specialLeaveInfo.startLeave,
+      endLeave: specialLeaveInfo.endLeave,
+      sendBy: approveBy,
+    };
+
+    const startDate = new Date(emailData.startLeave);
+    const endDate = new Date(emailData.endLeave);
+
+    const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${startDate.getFullYear()}`;
+    const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${endDate.getFullYear()}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    const emailView = getLeaveApprovalEmailTemplate(
+      'Special Leave Request Approval',
+      emailData,
+      formattedStartDate,
+      formattedEndDate,
+    );
+
+    const mailOptions = {
+      from: `"${approveBy} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
+      to: specialLeaveInfo.employee.user.email,
+      subject: 'Confirmation: Your Special Leave Request Has Been Approved',
+      html: emailView,
+    };
+
+    await transporter.sendMail(mailOptions);
 
     return successResponse(res, 'Successfully approved special leave', approveSpecialLeave);
   } catch (e) {
@@ -791,6 +855,23 @@ async function rejectSpecialLeave(req, res) {
       where: { id: parseInt(id) },
       select: {
         status: true,
+        startLeave: true,
+        endLeave: true,
+        employee: {
+          select: {
+            name: true,
+            user: {
+              select: {
+                email: true,
+              },
+            },
+          },
+        },
+        specialLeave: {
+          select: {
+            leaveTitle: true,
+          },
+        },
       },
     });
 
@@ -818,6 +899,51 @@ async function rejectSpecialLeave(req, res) {
       },
     });
 
+    const emailData = {
+      employeeName: specialLeaveInfo.employee.name,
+      reason: specialLeaveInfo.specialLeave.leaveTitle,
+      startLeave: specialLeaveInfo.startLeave,
+      endLeave: specialLeaveInfo.endLeave,
+      note: rejectSpecialLeave.note,
+    };
+
+    const startDate = new Date(emailData.startLeave);
+    const endDate = new Date(emailData.endLeave);
+
+    const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${startDate.getFullYear()}`;
+    const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${endDate.getFullYear()}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    const emailView = leaveRejectEmailTemplate(
+      'Special Leave Request Rejection',
+      emailData,
+      formattedStartDate,
+      formattedEndDate,
+    );
+
+    const mailOptions = {
+      from: `"${rejectBy} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
+      to: specialLeaveInfo.employee.user.email,
+      subject: 'Notification: Special Leave Request Rejected',
+      html: emailView,
+    };
+
+    await transporter.sendMail(mailOptions);
+
     return successResponse(res, 'Successfully rejected special leave', rejectSpecialLeave);
   } catch (e) {
     return errorResponse(res, 'Failed to reject special leave', null, 500);
@@ -841,6 +967,227 @@ async function deleteSpecialLeaveList(req, res) {
     return errorResponse(res, 'Failed to delete special leave list', null, 500);
   }
 }
+
+async function setSpecialLeaveBySelf(req, res) {
+  try {
+    const { specialLeaveId, startLeave } = req.body;
+
+    const emplooyeData = await prisma.employee.findUnique({
+      where: {
+        userId: req.user.id,
+      },
+      select: {
+        nik: true,
+        name: true,
+      },
+    });
+
+    // Retrieve employee's gender based on NIK
+    const employee = await prisma.employee.findUnique({
+      where: {
+        nik: emplooyeData.nik,
+      },
+      select: {
+        gender: true,
+      },
+    });
+
+    // Find the special leave based on specialLeaveId and employee's gender
+    const specialLeave = await prisma.specialLeave.findUnique({
+      where: {
+        id: parseInt(specialLeaveId),
+        OR: [{ gender: employee.gender }, { gender: 'LP' }],
+      },
+      select: {
+        amount: true,
+        leaveTitle: true,
+      },
+    });
+
+    // If special leave not found or does not match employee's gender, return 404 error response
+    if (!specialLeave) {
+      return errorResponse(
+        res,
+        'Special leave not found or does not match employee gender',
+        null,
+        404,
+      );
+    }
+
+    // Function to calculate endLeave date based on startLeave and special leave amount
+    const setEndLeave = (date, days) => {
+      let countedDays = 0;
+      let currentDate = new Date(date.getTime());
+
+      while (countedDays < days) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+          countedDays++;
+        }
+      }
+
+      return currentDate;
+    };
+
+    // Create a new entry for employeeSpecialLeave in the database
+    const setSpecialLeave = await prisma.employeeSpecialLeave.create({
+      data: {
+        employeeNik: emplooyeData.nik,
+        specialLeaveId,
+        startLeave,
+        endLeave: setEndLeave(startLeave, specialLeave.amount - 1),
+      },
+    });
+
+    const leaveEmailData = {
+      employeeName: emplooyeData.name,
+      reason: specialLeave.leaveTitle,
+      startLeave: setSpecialLeave.startLeave,
+      endLeave: setSpecialLeave.endLeave,
+    };
+
+    const startDate = new Date(leaveEmailData.startLeave);
+    const endDate = new Date(leaveEmailData.endLeave);
+
+    const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${startDate.getFullYear()}`;
+    const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${endDate.getFullYear()}`;
+
+    const userIdsWithReceiveEmail = await prisma.emailPreference.findMany({
+      where: {
+        receiveEmail: true,
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    const recipients = await prisma.user.findMany({
+      where: {
+        id: {
+          in: userIdsWithReceiveEmail.map((item) => item.userId),
+        },
+      },
+      select: {
+        email: true,
+      },
+    });
+
+    const recipientEmails = recipients.map((recipient) => recipient.email);
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: `"${emplooyeData.name} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
+      bcc: recipientEmails.join(','),
+      subject: 'Special Leave Request',
+      html: `<html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+          }
+          .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+          }
+          .content {
+            padding: 20px;
+          }
+          .content p {
+            margin: 10px 0;
+          }
+          .credentials {
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-align: start;
+            margin: 0 auto;
+          }
+          .credentials strong {
+            font-weight: bold;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Special Leave Request Information</h1>
+          </div>
+          <div class="content">
+            <p>This is to inform you that a special leave request has been submitted for the following period:</p>
+            <table class="credentials">
+            <tr>
+                <td><strong>Reason</strong></td>
+                <td><strong>:</strong></td>
+                <td>${leaveEmailData.reason}</td>
+              </tr> 
+            <tr>
+                <td><strong>From</strong></td>
+                <td><strong>:</strong></td>
+                <td>${formattedStartDate}</td>
+              </tr>
+              <tr>
+                <td><strong>Until</strong></td>
+                <td><strong>:</strong></td>
+                <td>${formattedEndDate}</td>
+              </tr>
+            </table>
+          </div>
+          <div class="footer">
+            <p>
+              Best regards, <br />
+              ${emplooyeData.name}
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return successResponse(res, 'Successfully set the special leave', setSpecialLeave);
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Failed to set special leave ', null, 500);
+  }
+}
 module.exports = {
   getSpecialLeaveList,
   getSpecialLeaveById,
@@ -854,4 +1201,5 @@ module.exports = {
   approveSpecialLeave,
   rejectSpecialLeave,
   deleteSpecialLeaveList,
+  setSpecialLeaveBySelf,
 };
