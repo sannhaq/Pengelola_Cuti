@@ -1188,11 +1188,13 @@ async function getCollectiveLeave(req, res) {
     });
 
     const allCollectiveLeave = leave.map((item) => ({
+      id: item.id,
       ...item.typeOfLeave,
       startLeave: item.startLeave,
       endLeave: item.endLeave,
       leaveUse: calculateLeaveAmount(item.startLeave, item.endLeave),
       reason: item.reason,
+      emailSent: item.emailSent,
     }));
 
     const totalPage = await prisma.leave.count({
