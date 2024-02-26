@@ -11,6 +11,11 @@ const {
   sum,
   updateLeaveAmount,
 } = require('../utils/helper.util');
+const {
+  getLeaveApprovalEmailTemplate,
+  getLeaveRequestEmailTempalte,
+  leaveRejectEmailTemplate,
+} = require('../utils/email.util');
 
 /**
  * @param {import('express').Request} req
@@ -710,11 +715,16 @@ async function createPersonalLeave(req, res) {
     const currentYearLeaveEntry = amountOfLeave.find((entry) => entry.year === currentYear);
 
     // Calculate available leave balance
-    const yourAvailableLeave = sum(previousYearLeaveEntry.amount, currentYearLeaveEntry.amount);
+    let yourAvailableLeave = 0;
 
-    // Check if leave amount exceeds the available amount of leave
-    if (leaveAmount > yourAvailableLeave) {
-      return errorResponse(res, 'Not enough leave balance', null, 400);
+    // If there is an entry for the previous year, add its amount to yourAvailableLeave
+    if (previousYearLeaveEntry) {
+      yourAvailableLeave += previousYearLeaveEntry.amount;
+    }
+
+    // Add the amount of leave for the current year to yourAvailableLeave
+    if (currentYearLeaveEntry) {
+      yourAvailableLeave += currentYearLeaveEntry.amount;
     }
 
     if (leaveAmount > 8) {
@@ -810,9 +820,20 @@ async function approvePersonalLeave(req, res) {
       select: {
         status: true,
         employeeNik: true,
+        employee: {
+          select: {
+            name: true,
+            user: {
+              select: {
+                email: true,
+              },
+            },
+          },
+        },
         leave: {
           select: {
             id: true,
+            reason: true,
             typeOfLeaveId: true,
             startLeave: true,
             endLeave: true,
@@ -865,6 +886,51 @@ async function approvePersonalLeave(req, res) {
     // Update leave amounts
     await updateLeaveAmount(leaveEmployeeInfo.employeeNik, deductedInfo, 'decrement');
 
+    const emailData = {
+      employeeName: leaveEmployeeInfo.employee.name,
+      reason: leaveEmployeeInfo.leave.reason,
+      startLeave: leaveEmployeeInfo.leave.startLeave,
+      endLeave: leaveEmployeeInfo.leave.endLeave,
+      sendBy: approveBy,
+    };
+
+    const startDate = new Date(emailData.startLeave);
+    const endDate = new Date(emailData.endLeave);
+
+    const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${startDate.getFullYear()}`;
+    const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${endDate.getFullYear()}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    const emailView = getLeaveApprovalEmailTemplate(
+      'Leave Request Approval',
+      emailData,
+      formattedStartDate,
+      formattedEndDate,
+    );
+
+    const mailOptions = {
+      from: `"${approveBy} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
+      to: leaveEmployeeInfo.employee.user.email,
+      subject: 'Confirmation: Your Leave Request Has Been Approved',
+      html: emailView,
+    };
+
+    await transporter.sendMail(mailOptions);
+
     return successResponse(res, 'Leave status updated to APPROVE', updateStatus);
   } catch (e) {
     console.log(e);
@@ -903,12 +969,24 @@ async function rejectPersonalLeave(req, res) {
       select: {
         status: true,
         employeeNik: true,
+        note: true,
+        employee: {
+          select: {
+            name: true,
+            user: {
+              select: {
+                email: true,
+              },
+            },
+          },
+        },
         leave: {
           select: {
             id: true,
             typeOfLeaveId: true,
             startLeave: true,
             endLeave: true,
+            reason: true,
           },
         },
       },
@@ -959,6 +1037,52 @@ async function rejectPersonalLeave(req, res) {
     if (leaveEmployeeInfo.status === 'APPROVE') {
       await updateLeaveAmount(leaveEmployeeInfo.employeeNik, deductedInfo, 'increment');
     }
+
+    const emailData = {
+      employeeName: leaveEmployeeInfo.employee.name,
+      reason: leaveEmployeeInfo.leave.reason,
+      startLeave: leaveEmployeeInfo.leave.startLeave,
+      endLeave: leaveEmployeeInfo.leave.endLeave,
+      note: updateStatus.note,
+      rejectBy,
+    };
+
+    const startDate = new Date(emailData.startLeave);
+    const endDate = new Date(emailData.endLeave);
+
+    const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${startDate.getFullYear()}`;
+    const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${endDate.getFullYear()}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    const emailView = leaveRejectEmailTemplate(
+      'Leave Request Rejection',
+      emailData,
+      formattedStartDate,
+      formattedEndDate,
+    );
+
+    const mailOptions = {
+      from: `"${rejectBy} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
+      to: leaveEmployeeInfo.employee.user.email,
+      subject: 'Notification: Leave Request Rejected',
+      html: emailView,
+    };
+
+    await transporter.sendMail(mailOptions);
 
     return successResponse(res, 'Leave status updated to REJECT', updateStatus);
   } catch (e) {
@@ -1319,7 +1443,7 @@ async function sendEmailLeaveMandatoryById(req, res) {
 
     // Construct email options
     const mailOptions = {
-      from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
+      from: `"${senderName} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
       bcc: recipientEmails.join(','),
       subject: 'Leave Notification',
       html: `<html>
@@ -1638,6 +1762,193 @@ async function sendEmailLeaveOptionalById(req, res) {
   }
 }
 
+async function createPersonalLeaveByUser(req, res) {
+  try {
+    // Extract necessary data from the request body and parameters
+    const { reason, startLeave, endLeave } = req.body;
+
+    const userId = req.user.id;
+
+    const emplooyeData = await prisma.employee.findUnique({
+      where: {
+        userId: userId,
+      },
+      select: {
+        nik: true,
+        name: true,
+      },
+    });
+
+    // Validate that end date is greater than start date
+    if (new Date(endLeave) < new Date(startLeave)) {
+      return errorResponse(res, 'End date should be greater than start date', null, 400);
+    }
+
+    const leaveAmount = calculateLeaveAmount(startLeave, endLeave);
+    let today = new Date();
+    let currentYear = today.getFullYear();
+    let previousYear = currentYear - 1;
+
+    // Retrieve leave amount for the specified employee for previous and current year
+    const amountOfLeave = await prisma.amountOfLeave.findMany({
+      where: { employeeNik: emplooyeData.nik },
+      select: {
+        id: true,
+        year: true,
+        amount: true,
+      },
+    });
+
+    // Find previous year and current year leave entries
+    const previousYearLeaveEntry = amountOfLeave.find((entry) => entry.year === previousYear);
+    const currentYearLeaveEntry = amountOfLeave.find((entry) => entry.year === currentYear);
+
+    // Calculate available leave balance
+    let yourAvailableLeave = 0;
+
+    // If there is an entry for the previous year, add its amount to yourAvailableLeave
+    if (previousYearLeaveEntry) {
+      yourAvailableLeave += previousYearLeaveEntry.amount;
+    }
+
+    // Add the amount of leave for the current year to yourAvailableLeave
+    if (currentYearLeaveEntry) {
+      yourAvailableLeave += currentYearLeaveEntry.amount;
+    }
+
+    // Check if the requested leave amount exceeds the total available leave
+    if (leaveAmount > yourAvailableLeave) {
+      return errorResponse(res, 'Not enough leave balance', null, 400);
+    }
+
+    if (leaveAmount > 8) {
+      return errorResponse(res, 'Leave can only be taken for a maximum of 8 days', null, 400);
+    }
+
+    // Create a new personal leave entry in the database
+    const leaveData = await prisma.leave.create({
+      data: {
+        typeOfLeaveId: 3,
+        reason,
+        startLeave,
+        endLeave,
+      },
+    });
+
+    // Retrieve the generated leaveId
+    const leaveId = leaveData.id;
+
+    // Create a leaveEmployee entry linking the leave to the specified employee (identified by nik)
+    await prisma.leaveEmployee.create({
+      data: {
+        leaveId: leaveId,
+        employeeNik: emplooyeData.nik,
+      },
+    });
+
+    // Create deducted leave entry based on leave amount and year
+    if (previousYearLeaveEntry) {
+      let remainingPreviousYearLeave = previousYearLeaveEntry.amount - leaveAmount;
+      let currentYearDeduct = 0;
+
+      if (remainingPreviousYearLeave < 0 && currentYearLeaveEntry) {
+        currentYearDeduct = Math.abs(remainingPreviousYearLeave);
+        remainingPreviousYearLeave = 0;
+      }
+
+      await prisma.deductedLeave.create({
+        data: {
+          leaveId: leaveId,
+          employeeNik: emplooyeData.nik,
+          previousYearDeduct: Math.max(0, Math.min(previousYearLeaveEntry.amount, leaveAmount)),
+          currentYearDeduct: Math.max(0, currentYearDeduct),
+        },
+      });
+    } else {
+      if (currentYearLeaveEntry) {
+        await prisma.deductedLeave.create({
+          data: {
+            leaveId: leaveId,
+            employeeNik: emplooyeData.nik,
+            currentYearDeduct: Math.max(0, Math.min(currentYearLeaveEntry.amount, leaveAmount)),
+          },
+        });
+      }
+    }
+
+    const leaveEmailData = {
+      employeeName: emplooyeData.name,
+      reason: leaveData.reason,
+      startLeave: leaveData.startLeave,
+      endLeave: leaveData.endLeave,
+    };
+
+    const startDate = new Date(leaveEmailData.startLeave);
+    const endDate = new Date(leaveEmailData.endLeave);
+
+    const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${startDate.getFullYear()}`;
+    const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
+      month: 'long',
+    })} ${endDate.getFullYear()}`;
+
+    const userIdsWithReceiveEmail = await prisma.emailPreference.findMany({
+      where: {
+        receiveEmail: true,
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    const recipients = await prisma.user.findMany({
+      where: {
+        id: {
+          in: userIdsWithReceiveEmail.map((item) => item.userId),
+        },
+      },
+      select: {
+        email: true,
+      },
+    });
+
+    const recipientEmails = recipients.map((recipient) => recipient.email);
+
+    const emailView = getLeaveRequestEmailTempalte(
+      leaveEmailData,
+      formattedStartDate,
+      formattedEndDate,
+      emplooyeData,
+    );
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: `"${emplooyeData.name} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
+      bcc: recipientEmails.join(','),
+      subject: 'Leave Request',
+      html: emailView,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return successResponse(res, 'Data succcessfully created', leaveData);
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Internal server error', null);
+  }
+}
+
 module.exports = {
   getLeaveHistoryNik,
   getLeaveHistoryMe,
@@ -1654,4 +1965,5 @@ module.exports = {
   getCollectiveLeave,
   sendEmailLeaveMandatoryById,
   sendEmailLeaveOptionalById,
+  createPersonalLeaveByUser,
 };

@@ -12,7 +12,7 @@ const specialLeaveController = require('../controllers/special-leave.controller'
 router.get('/mandatory', checkPermission('View Mandatory Leave'), leaveController.mandatoryLeave);
 // GET ALL Leave history by user login
 router.get(
-  '/history/me',
+  '/history/self',
   checkPermission('Get Leave History for Current User'),
   leaveController.getLeaveHistoryMe,
 );
@@ -46,11 +46,19 @@ router.post(
 );
 // POST personal leave
 router.post(
+  '/personal/self',
+  checkPermission('Create Personal Leave'),
+  validation.personalLeaveValidation,
+  leaveController.createPersonalLeaveByUser,
+);
+
+router.post(
   '/personal/:nik',
   checkPermission('Create Personal Leave'),
   validation.personalLeaveValidation,
   leaveController.createPersonalLeave,
 );
+
 // PATCH accept leave applications from users
 router.patch(
   '/personal/:id/approve',
@@ -124,6 +132,12 @@ router.get(
 );
 
 // set employee special leave
+router.post(
+  '/employee-special-leave/self',
+  checkPermission('Set Employee Special Leave'),
+  validation.createEmployeeSpecialLeave,
+  specialLeaveController.setSpecialLeaveBySelf,
+);
 router.post(
   '/employee-special-leave/:nik',
   checkPermission('Set Employee Special Leave'),
