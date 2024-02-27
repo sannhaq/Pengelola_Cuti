@@ -176,7 +176,12 @@ const rolePermissions = [
   {
     // 25
     roleId: 3,
-    permissionId: 25,
+    permissionId: 41,
+  },
+  {
+    // 25
+    roleId: 2,
+    permissionId: 41,
   },
   {
     // 26
@@ -219,9 +224,14 @@ const rolePermissions = [
     permissionId: 33,
   },
   {
-    // 33
+    // 40
     roleId: 3,
-    permissionId: 33,
+    permissionId: 40,
+  },
+  {
+    // 40
+    roleId: 2,
+    permissionId: 40,
   },
   {
     // 34
@@ -342,6 +352,16 @@ const rolePermissions = [
     // 40
     roleId: 2,
     permissionId: 39,
+  },
+  {
+    // 40
+    roleId: 2,
+    permissionId: 42,
+  },
+  {
+    // 40
+    roleId: 3,
+    permissionId: 42,
   },
 ];
 

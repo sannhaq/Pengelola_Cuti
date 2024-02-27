@@ -47,7 +47,7 @@ router.post(
 // POST personal leave
 router.post(
   '/personal/self',
-  checkPermission('Create Personal Leave'),
+  checkPermission('Leave for Self-Requested'),
   validation.personalLeaveValidation,
   leaveController.createPersonalLeaveByUser,
 );
@@ -97,7 +97,7 @@ router.get(
 // GET special leave by matching gender
 router.get(
   '/special-leave/gender/:nik',
-  checkPermission('View All Special Leave History'),
+  checkPermission('Gender-Based Special Leave'),
   specialLeaveController.getSpecialLeaveByNikGender,
 );
 
@@ -134,7 +134,7 @@ router.get(
 // set employee special leave
 router.post(
   '/employee-special-leave/self',
-  checkPermission('Set Employee Special Leave'),
+  checkPermission('Special Leave for Self-Requested'),
   validation.createEmployeeSpecialLeave,
   specialLeaveController.setSpecialLeaveBySelf,
 );

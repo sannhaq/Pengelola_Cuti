@@ -10,6 +10,7 @@ const {
   successResponseWithPage,
   sum,
   updateLeaveAmount,
+  updateLeaveAmountForEmployee,
 } = require('../utils/helper.util');
 const {
   getLeaveApprovalEmailTemplate,
@@ -183,6 +184,7 @@ async function getLeaveHistoryMe(req, res) {
                   select: {
                     id: true,
                     typeOfLeaveId: true,
+                    emailSent: true,
                     typeOfLeave: {
                       select: {
                         name: true,
@@ -203,14 +205,19 @@ async function getLeaveHistoryMe(req, res) {
       },
     });
 
+    // Filter out leaves with emailSent: false
+    const leavesWithEmailSent = userLeaveInfo.employee.leaveEmployees.filter(
+      (item) => item.leave.emailSent === true,
+    );
+
     // Count total leaves for the user
-    const totalLeaves = userLeaveInfo.employee.leaveEmployees.length;
+    const totalLeaves = leavesWithEmailSent.length;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.user, { page, perPage, total: totalLeaves });
 
     // Slice leaves based on current page and perPage
-    const paginatedLeaves = userLeaveInfo.employee.leaveEmployees.slice(
+    const paginatedLeaves = leavesWithEmailSent.slice(
       (pagination.meta.currPage - 1) * pagination.meta.perPage,
       pagination.meta.currPage * pagination.meta.perPage,
     );
@@ -286,6 +293,12 @@ async function mandatoryLeave(req, res) {
       select: {
         name: true,
         leaves: {
+          orderBy: {
+            updated_at: 'desc',
+          },
+          where: {
+            emailSent: true,
+          },
           select: {
             id: true,
             reason: true,
@@ -314,7 +327,7 @@ async function mandatoryLeave(req, res) {
 
     // Count total mandatory leaves using Prisma
     const totalLeaves = await prisma.leave.count({
-      where: { typeOfLeaveId: 1 },
+      where: { typeOfLeaveId: 1, emailSent: true },
     });
 
     return successResponseWithPage(
@@ -354,13 +367,18 @@ async function optionalLeave(req, res) {
           select: {
             nik: true,
             leaveEmployees: {
-              where: { leave: { typeOfLeaveId: 2 }, status: 'APPROVE' },
+              where: {
+                leave: { typeOfLeaveId: 2 },
+                status: 'APPROVE',
+                leave: { emailSent: true },
+              },
               select: {
                 id: true,
                 status: true,
                 leave: {
                   select: {
                     id: true,
+                    emailSent: true,
                     startLeave: true,
                     endLeave: true,
                     reason: true,
@@ -393,7 +411,7 @@ async function optionalLeave(req, res) {
       where: {
         employeeNik: userLeaveInfo.employee.nik,
         status: 'APPROVE',
-        leave: { typeOfLeaveId: 2 },
+        leave: { typeOfLeaveId: 2, emailSent: true },
       },
     });
 
@@ -492,98 +510,11 @@ async function collectiveLeave(req, res) {
       })),
     });
 
-    // Calculating the number of leave days
-    let numberOfLeaveDays = calculateLeaveAmount(startLeave, endLeave);
-    let today = new Date();
-    let currentYear = today.getFullYear();
-    let previousYear = currentYear - 1;
-
-    // Updating leave amounts for eligible employees
-    for (const emp of eligibleEmployee) {
-      // Finding leave amount for the previous year
-      const previousYearLeave = await prisma.amountOfLeave.findFirst({
-        where: {
-          employeeNik: emp.nik,
-          year: previousYear,
-        },
-      });
-
-      // Finding leave amount for the current year
-      const currentYearLeave = await prisma.amountOfLeave.findFirst({
-        where: {
-          employeeNik: emp.nik,
-          year: currentYear,
-        },
-      });
-
-      // Calculating remaining leave for the previous year and updating if necessary
-      if (previousYearLeave) {
-        let remainingPreviousYearLeave = previousYearLeave.amount - numberOfLeaveDays;
-
-        // Initialize variable for current year deduction
-        let currentYearDeduct = 0;
-
-        // Adjusting current year's leave amount if previous year's leave is insufficient
-        if (remainingPreviousYearLeave < 0 && currentYearLeave) {
-          // Calculate current year deduction
-          currentYearDeduct = Math.abs(remainingPreviousYearLeave);
-          let remainingCurrentYearLeave = currentYearLeave.amount + remainingPreviousYearLeave;
-          remainingPreviousYearLeave = 0;
-
-          // Update current year's leave amount
-          await prisma.amountOfLeave.update({
-            where: {
-              id: currentYearLeave.id,
-            },
-            data: {
-              amount: remainingCurrentYearLeave,
-            },
-          });
-        }
-
-        // Update previous year's leave amount
-        await prisma.amountOfLeave.update({
-          where: {
-            id: previousYearLeave.id,
-          },
-          data: {
-            amount: Math.max(0, remainingPreviousYearLeave),
-          },
-        });
-
-        // Create deductedLeave entry with deductions from both years
-        await prisma.deductedLeave.create({
-          data: {
-            leaveId: leaveId,
-            employeeNik: emp.nik,
-            previousYearDeduct: Math.max(0, Math.min(previousYearLeave.amount, numberOfLeaveDays)),
-            currentYearDeduct: Math.max(0, currentYearDeduct),
-          },
-        });
-      } else {
-        // Updating current year's leave amount if no previous year leave entry exists
-        if (currentYearLeave) {
-          const remainingCurrentYearLeave = currentYearLeave.amount - numberOfLeaveDays;
-          await prisma.amountOfLeave.update({
-            where: {
-              id: currentYearLeave.id,
-            },
-            data: {
-              amount: remainingCurrentYearLeave,
-            },
-          });
-
-          // Saving deducted leave data to DeductedLeave table
-          await prisma.deductedLeave.create({
-            data: {
-              leaveId: leaveId,
-              employeeNik: emp.nik,
-              currentYearDeduct: Math.max(0, Math.min(currentYearLeave.amount, numberOfLeaveDays)),
-            },
-          });
-        }
-      }
-    }
+    // // Calculating the number of leave days
+    // let numberOfLeaveDays = calculateLeaveAmount(startLeave, endLeave);
+    // let today = new Date();
+    // let currentYear = today.getFullYear();
+    // let previousYear = currentYear - 1;
 
     return successResponse(res, 'Data successfully saved', leaveData);
   } catch (e) {
@@ -644,13 +575,29 @@ async function rejectOptionalLeave(req, res) {
     });
 
     // Check if the leave status is already 'REJECT'
-    const rejectStatus = await prisma.leaveEmployee.findUnique({
+    const leaveData = await prisma.leaveEmployee.findUnique({
       where: { id: parseInt(id) },
-      select: { status: true },
+      select: {
+        status: true,
+        leave: {
+          select: {
+            startLeave: true,
+          },
+        },
+      },
     });
 
-    if (rejectStatus.status === 'REJECT') {
+    if (leaveData.status === 'REJECT') {
       return errorResponse(res, 'Leave status is already REJECT', null, 409);
+    }
+
+    // Check if the startLeave date has already passed
+    const startLeaveDate = new Date(leaveData.leave.startLeave);
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    if (startLeaveDate < currentDate) {
+      return errorResponse(res, 'Cannot reject leave once it has started', null, 400);
     }
 
     // Update the leave status to 'REJECT'
@@ -738,6 +685,7 @@ async function createPersonalLeave(req, res) {
         reason,
         startLeave,
         endLeave,
+        emailSent: true,
       },
     });
 
@@ -1541,6 +1489,39 @@ async function sendEmailLeaveMandatoryById(req, res) {
       },
     });
 
+    const leaveId = leave.id;
+
+    // Finding eligible employees who are currently working and have roles with id 2 or 3
+    const eligibleEmployee = await prisma.employee.findMany({
+      where: {
+        isWorking: true,
+        user: {
+          role: {
+            id: {
+              not: 1,
+            },
+          },
+        },
+      },
+    });
+
+    // Calculating the number of leave days
+    let numberOfLeaveDays = calculateLeaveAmount(leave.startLeave, leave.endLeave);
+    let today = new Date();
+    let currentYear = today.getFullYear();
+    let previousYear = currentYear - 1;
+
+    // Updating leave amounts for eligible employees
+    for (const emp of eligibleEmployee) {
+      await updateLeaveAmountForEmployee(
+        emp,
+        numberOfLeaveDays,
+        leaveId,
+        previousYear,
+        currentYear,
+      );
+    }
+
     // Respond with success message
     return successResponse(res, 'Leave email sent successfully', '', 200);
   } catch (error) {
@@ -1754,6 +1735,39 @@ async function sendEmailLeaveOptionalById(req, res) {
       },
     });
 
+    const leaveId = leave.id;
+
+    // Finding eligible employees who are currently working and have roles with id 2 or 3
+    const eligibleEmployee = await prisma.employee.findMany({
+      where: {
+        isWorking: true,
+        user: {
+          role: {
+            id: {
+              not: 1,
+            },
+          },
+        },
+      },
+    });
+
+    // Calculating the number of leave days
+    let numberOfLeaveDays = calculateLeaveAmount(leave.startLeave, leave.endLeave);
+    let today = new Date();
+    let currentYear = today.getFullYear();
+    let previousYear = currentYear - 1;
+
+    // Updating leave amounts for eligible employees
+    for (const emp of eligibleEmployee) {
+      await updateLeaveAmountForEmployee(
+        emp,
+        numberOfLeaveDays,
+        leaveId,
+        previousYear,
+        currentYear,
+      );
+    }
+
     // Respond with success message
     return successResponse(res, 'Leave email sent successfully', '', 200);
   } catch (error) {
@@ -1832,6 +1846,7 @@ async function createPersonalLeaveByUser(req, res) {
         reason,
         startLeave,
         endLeave,
+        emailSent: true,
       },
     });
 

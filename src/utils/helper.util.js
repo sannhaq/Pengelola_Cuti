@@ -249,6 +249,98 @@ function uploadFile(options, fieldName = 'image') {
     });
 }
 
+async function updateLeaveAmountForEmployee(
+  emp,
+  numberOfLeaveDays,
+  leaveId,
+  previousYear,
+  currentYear,
+) {
+  // Finding leave amount for the previous year
+  const previousYearLeave = await prisma.amountOfLeave.findFirst({
+    where: {
+      employeeNik: emp.nik,
+      year: previousYear,
+    },
+  });
+
+  // Finding leave amount for the current year
+  const currentYearLeave = await prisma.amountOfLeave.findFirst({
+    where: {
+      employeeNik: emp.nik,
+      year: currentYear,
+    },
+  });
+
+  // Calculating remaining leave for the previous year and updating if necessary
+  if (previousYearLeave) {
+    let remainingPreviousYearLeave = previousYearLeave.amount - numberOfLeaveDays;
+
+    // Initialize variable for current year deduction
+    let currentYearDeduct = 0;
+
+    // Adjusting current year's leave amount if previous year's leave is insufficient
+    if (remainingPreviousYearLeave < 0 && currentYearLeave) {
+      // Calculate current year deduction
+      currentYearDeduct = Math.abs(remainingPreviousYearLeave);
+      let remainingCurrentYearLeave = currentYearLeave.amount + remainingPreviousYearLeave;
+      remainingPreviousYearLeave = 0;
+
+      // Update current year's leave amount
+      await prisma.amountOfLeave.update({
+        where: {
+          id: currentYearLeave.id,
+        },
+        data: {
+          amount: remainingCurrentYearLeave,
+        },
+      });
+    }
+
+    // Update previous year's leave amount
+    await prisma.amountOfLeave.update({
+      where: {
+        id: previousYearLeave.id,
+      },
+      data: {
+        amount: Math.max(0, remainingPreviousYearLeave),
+      },
+    });
+
+    // Create deductedLeave entry with deductions from both years
+    await prisma.deductedLeave.create({
+      data: {
+        leaveId: leaveId,
+        employeeNik: emp.nik,
+        previousYearDeduct: Math.max(0, Math.min(previousYearLeave.amount, numberOfLeaveDays)),
+        currentYearDeduct: Math.max(0, currentYearDeduct),
+      },
+    });
+  } else {
+    // Updating current year's leave amount if no previous year leave entry exists
+    if (currentYearLeave) {
+      const remainingCurrentYearLeave = currentYearLeave.amount - numberOfLeaveDays;
+      await prisma.amountOfLeave.update({
+        where: {
+          id: currentYearLeave.id,
+        },
+        data: {
+          amount: remainingCurrentYearLeave,
+        },
+      });
+
+      // Saving deducted leave data to DeductedLeave table
+      await prisma.deductedLeave.create({
+        data: {
+          leaveId: leaveId,
+          employeeNik: emp.nik,
+          currentYearDeduct: Math.max(0, Math.min(currentYearLeave.amount, numberOfLeaveDays)),
+        },
+      });
+    }
+  }
+}
+
 // file-end
 
 module.exports = {
@@ -269,4 +361,5 @@ module.exports = {
   setStorage,
   setFileFilter,
   uploadFile,
+  updateLeaveAmountForEmployee,
 };
