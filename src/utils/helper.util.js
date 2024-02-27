@@ -1,4 +1,6 @@
 const { z } = require('zod');
+const fs = require('fs');
+const multer = require('multer');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -187,6 +189,68 @@ async function updateLeaveAmount(employeeNik, deductionInfo, operation) {
   }
 }
 
+// file
+
+function getFilePath(url) {
+  const fileName = url.split('/').pop();
+  return `./public/assets/images/${fileName}`;
+}
+
+function generateAssetUrl(fileName) {
+  return `${process.env.BASE_URL}/public/assets/images/${fileName}`;
+}
+
+function deleteAsset(path) {
+  if (fs.existsSync(path) && !path.split('/').pop() === '') {
+    fs.unlinkSync(path);
+  }
+}
+
+function setStorage() {
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, 'public/assets/images');
+    },
+    filename: (req, file, cb) => {
+      cb(null, `${Date.now()}-${file.originalname}`);
+    },
+  });
+
+  return storage;
+}
+
+function setFileFilter(allowedTypes = ['image/jpg', 'image/jpeg', 'image/png', 'image/svg+xml']) {
+  return (req, file, cb) => {
+    if (!allowedTypes.includes(file.mimetype)) {
+      const error = new Error('Incorrect file');
+      error.code = 'INCORRECT_FILETYPE';
+      cb(error, false);
+    }
+    cb(null, true);
+  };
+}
+
+/**
+ * @param {import('multer').Options} options
+ */
+
+function uploadFile(options, fieldName = 'image') {
+  const upload = multer(options).single(fieldName);
+
+  return (req, res, next) =>
+    upload(req, res, (err) => {
+      if (err) {
+        return errorResponse(res, err.message, null, 422);
+      }
+      if (!req.file) {
+        return errorResponse(res, `${fieldName} is required`, null, 400);
+      }
+      return next();
+    });
+}
+
+// file-end
+
 module.exports = {
   sum,
   successResponse,
@@ -199,4 +263,10 @@ module.exports = {
   formatLeaveHistoryData,
   validate,
   updateLeaveAmount,
+  getFilePath,
+  generateAssetUrl,
+  deleteAsset,
+  setStorage,
+  setFileFilter,
+  uploadFile,
 };

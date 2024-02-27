@@ -13,6 +13,7 @@ const { specialLeaveSeed } = require('./special-leave.seeder');
 const { typeOfEmployeeSeed } = require('./type-of-employee.seeder');
 const { typeOfLeaveSeed } = require('./type-of-leave.seeder');
 const { userSeed } = require('./user.seeder');
+const { webSettingSeed } = require('./web-setting.seeder');
 
 async function main() {
   // user seed
@@ -30,6 +31,7 @@ async function main() {
   await permissionSeed();
   await rolePermissionSeed();
   await emailPrefereceSeed();
+  await webSettingSeed();
 }
 
 main()
