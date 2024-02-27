@@ -211,6 +211,21 @@ const permissions = [
     name: 'Setting Website',
     created_at: new Date(),
   },
+  {
+    // 40
+    name: 'Special Leave for Self-Requested',
+    created_at: new Date(),
+  },
+  {
+    // 41
+    name: 'Leave for Self-Requested',
+    created_at: new Date(),
+  },
+  {
+    // 42
+    name: 'Gender-Based Special Leave',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {
