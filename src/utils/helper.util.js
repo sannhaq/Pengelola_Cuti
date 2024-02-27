@@ -193,7 +193,7 @@ async function updateLeaveAmount(employeeNik, deductionInfo, operation) {
 
 function getFilePath(url) {
   const fileName = url.split('/').pop();
-  return `./public/assets/images/${fileName}`;
+  return `public/assets/images/${fileName}`;
 }
 
 function generateAssetUrl(fileName) {

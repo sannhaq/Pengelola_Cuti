@@ -9,7 +9,6 @@ const {
   successResponse,
   getFilePath,
   generateAssetUrl,
-  deleteAsset,
 } = require('../utils/helper.util');
 
 /**
@@ -123,6 +122,13 @@ async function updateImageLogo(req, res) {
 
     // Update the logo image URL in the database only if a new file is uploaded
     if (req.file) {
+      // Delete the previous image file if it exists
+      if (webSetting.picture) {
+        const filePath = getFilePath(webSetting.picture); // Mendapatkan path file
+        fs.unlinkSync(filePath); // Menghapus file dari direktori
+      }
+
+      // Update the picture field with the new filename
       updatedWebSetting = await prisma.webSetting.update({
         where: {
           id: parseInt(webSettingId),
@@ -131,16 +137,6 @@ async function updateImageLogo(req, res) {
           picture: generateAssetUrl(req.file.filename),
         },
       });
-
-      // Delete the old image from the server
-      if (webSetting.picture) {
-        const oldFileName = webSetting.picture.split('/').pop();
-        const oldFilePath = getFilePath(oldFileName);
-        deleteAsset(oldFilePath);
-      }
-    } else {
-      // No new file uploaded, return the current web setting without updating
-      updatedWebSetting = webSetting;
     }
 
     // Return success response with the updated web setting
@@ -148,13 +144,6 @@ async function updateImageLogo(req, res) {
   } catch (error) {
     // Handle error and return error response
     console.error('Failed to update logo image:', error);
-
-    // Rollback deletion of the new image if an error occurs
-    if (req.file) {
-      const filePath = getFilePath(req.file.filename);
-      deleteAsset(filePath);
-    }
-
     return errorResponse(
       res,
       'Failed to update logo image',

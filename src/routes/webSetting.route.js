@@ -2,7 +2,6 @@ const express = require('express');
 
 const router = express.Router();
 const webSettingController = require('../controllers/webSetting.controller');
-const checkPermission = require('../middleware/checkPermission.middleware');
 const { setStorage, setFileFilter, uploadFile } = require('../utils/helper.util');
 const storage = setStorage();
 const fileFilter = setFileFilter();
