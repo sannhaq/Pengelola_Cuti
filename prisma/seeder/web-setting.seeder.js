@@ -2,7 +2,7 @@ const { prisma } = require('./config');
 
 const webSettings = [
   {
-    picture: 'https://10.10.101.231:8080/public/assets/images/logo_wgs_fullBlack.svg',
+    picture: 'https://10.10.101.57:8080/public/assets/images/logo_wgs_fullBlack.svg',
     ipAddress: '127.0.0.1:3000',
     webColorCode: '#131720',
   },
