@@ -125,7 +125,11 @@ async function updateImageLogo(req, res) {
       // Delete the previous image file if it exists
       if (webSetting.picture) {
         const filePath = getFilePath(webSetting.picture); // Mendapatkan path file
-        fs.unlinkSync(filePath); // Menghapus file dari direktori
+
+        // Pengecekan apakah file ada sebelum mencoba menghapusnya
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath); // Menghapus file dari direktori
+        }
       }
 
       // Update the picture field with the new filename
