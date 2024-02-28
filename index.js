@@ -12,9 +12,12 @@ const fs = require('fs');
 const routes = require('./src/routes/index.route');
 // config
 const config = require('./src/configs/general.config');
+const { getIpAddress } = require('./src/configs/ip.config');
 
 const port = config.port || 3000;
-const host = config.host || 'localhost';
+// const host = config.host || 'localhost';
+const ipAddress = getIpAddress();
+
 const app = express();
 const prisma = new PrismaClient({
   datasources: {
@@ -46,6 +49,6 @@ app.get('/test', (req, res) => {
 app.use('/api', routes);
 
 // logger
-server.listen(port, host, () => {
-  console.log(`The server is running on https://${host}:${port}`);
+server.listen(port, ipAddress, () => {
+  console.log(`The server is running on https://${ipAddress}:${port}`);
 });
