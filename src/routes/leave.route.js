@@ -34,7 +34,7 @@ router.get(
 // GET leave history based on nik
 router.get(
   '/history/:nik',
-  checkPermission('View Special Leave History'),
+  checkPermission('View Leave History by Employee NIK'),
   leaveController.getLeaveHistoryNik,
 );
 // POST optional and mandatory leave

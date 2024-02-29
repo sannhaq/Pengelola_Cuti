@@ -128,7 +128,7 @@ const permissions = [
   },
   {
     // 23
-    name: 'View Leave History by Employee ID',
+    name: 'View Leave History by Employee NIK',
     created_at: new Date(),
   },
   {
