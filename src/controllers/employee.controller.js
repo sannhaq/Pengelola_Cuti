@@ -707,9 +707,87 @@ async function createOrUpdateAmountOfLeave(employeeNik, isContract, startContrac
   });
 }
 
+async function updateRole(req, res) {
+  const employeeNik = req.params.nik;
+  const { roleId } = req.body;
+
+  try {
+    const findEmployee = await prisma.employee.findUnique({
+      where: {
+        nik: employeeNik,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            role: true,
+          },
+        },
+      },
+    });
+    const employee = await prisma.employee.update({
+      where: {
+        nik: employeeNik,
+      },
+      data: {
+        user: {
+          update: {
+            role: {
+              connect: { id: parseInt(roleId) },
+            },
+          },
+        },
+      },
+    });
+
+    const newRolePermissions = await prisma.rolePermission.findMany({
+      where: {
+        roleId: roleId,
+      },
+      include: {
+        permission: true,
+      },
+    });
+
+    const hasReceiveEmailPermission = newRolePermissions.some(
+      (rolePermission) => rolePermission.permission.name === 'Receiving Email Requests for Leave',
+    );
+
+    if (hasReceiveEmailPermission) {
+      // Jika peran baru memiliki izin, buat atau perbarui EmailPreference
+      await prisma.emailPreference.upsert({
+        where: {
+          userId: findEmployee.user.id,
+        },
+        update: {
+          receiveEmail: true,
+        },
+        create: {
+          userId: findEmployee.user.id,
+          receiveEmail: true,
+        },
+      });
+    } else {
+      // Jika peran baru tidak memiliki izin, hapus EmailPreference jika ada
+      await prisma.emailPreference.deleteMany({
+        where: {
+          userId: findEmployee.user.id,
+        },
+      });
+    }
+
+    // Return success response
+    successResponse(res, 'Role updated successfully', employee, 200);
+  } catch (error) {
+    // Handle error and return error response
+    console.error('Failed to update role:', error);
+    errorResponse(res, 'Failed to update role', error.message, 500);
+  }
+}
+
 async function updateEmployee(req, res) {
   const employeeNik = req.params.nik;
-  const { name, positionId, typeOfEmployee, roleId, gender } = req.body;
+  const { name, positionId, typeOfEmployee, gender } = req.body;
 
   try {
     // Fetch the existing employee data from the database using Prisma
@@ -733,125 +811,46 @@ async function updateEmployee(req, res) {
       return errorResponse(res, 'Employee not found', '', 404);
     }
 
-    // Check if the authenticated user has admin privileges
-    if (req.user.role.name === 'Admin' || req.user.role.name === 'Super Admin') {
-      // Menyiapkan data pembaruan untuk pengguna admin atau super admin
-      const updateData = {
-        name,
-        gender,
-        positions: {
-          connect: { id: positionId },
+    const updateData = {
+      name,
+      gender,
+      positions: {
+        connect: { id: positionId },
+      },
+      typeOfEmployee: {
+        update: {
+          isContract: typeOfEmployee.isContract,
+          newContract: typeOfEmployee.isContract ? typeOfEmployee.newContract : false,
+          endContract: typeOfEmployee.isContract
+            ? moment.utc(typeOfEmployee.endContract).format()
+            : null,
+          startContract: typeOfEmployee.isContract
+            ? moment.utc(typeOfEmployee.startContract).format()
+            : undefined,
         },
-        typeOfEmployee: {
-          update: {
-            isContract: typeOfEmployee.isContract,
-            newContract: typeOfEmployee.isContract ? typeOfEmployee.newContract : false,
-            endContract: typeOfEmployee.isContract
-              ? moment.utc(typeOfEmployee.endContract).format()
-              : null,
-            startContract: typeOfEmployee.isContract
-              ? moment.utc(typeOfEmployee.startContract).format()
-              : undefined,
-          },
-        },
-        // Jika roleId disediakan dalam body permintaan, perbarui peran
-        ...(roleId && {
-          user: {
-            update: {
-              role: {
-                connect: { id: roleId },
-              },
-            },
-          },
-        }),
-      };
+      },
+    };
 
-      // Memperbarui data karyawan dengan data yang sudah disiapkan
-      const existingEmployee = await prisma.employee.findUnique({
-        where: {
-          nik: employeeNik,
-        },
-        include: {
-          typeOfEmployee: true,
-        },
-      });
-
-      if (existingEmployee.typeOfEmployee.isContract === false) {
-        // Jika isContract false, pastikan startContract tidak diubah
-        delete updateData.typeOfEmployee.update.startContract;
-      }
-
-      // Memperbarui data karyawan dengan data yang sudah disiapkan
-      await prisma.employee.update({
-        where: {
-          nik: employeeNik,
-        },
-        data: updateData,
-      });
-
-      // Pembaruan atau pembuatan amountOfLeave setelah pembaruan data employee
-      await createOrUpdateAmountOfLeave(
-        employeeNik,
-        typeOfEmployee.isContract,
-        typeOfEmployee.startContract,
-        typeOfEmployee.endContract,
-      );
-    } else if (req.user.role.name === 'User') {
-      // Update employee name for non-admin user
-      await prisma.employee.update({
-        where: {
-          nik: employeeNik,
-        },
-        data: {
-          name,
-          gender,
-        },
-      });
-
-      // Pembaruan atau pembuatan amountOfLeave setelah pembaruan data employee
-      await createOrUpdateAmountOfLeave(
-        employeeNik,
-        typeOfEmployee.isContract,
-        typeOfEmployee.startContract,
-        typeOfEmployee.endContract,
-      );
+    if (typeOfEmployee.isContract === false) {
+      // Jika isContract false, pastikan startContract tidak diubah
+      delete updateData.typeOfEmployee.update.startContract;
     }
 
-    const newRolePermissions = await prisma.rolePermission.findMany({
+    // Memperbarui data karyawan dengan data yang sudah disiapkan
+    await prisma.employee.update({
       where: {
-        roleId: roleId,
+        nik: employeeNik,
       },
-      include: {
-        permission: true,
-      },
+      data: updateData,
     });
 
-    const hasReceiveEmailPermission = newRolePermissions.some(
-      (rolePermission) => rolePermission.permission.name === 'Receiving Email Requests for Leave',
+    // Pembaruan atau pembuatan amountOfLeave setelah pembaruan data employee
+    await createOrUpdateAmountOfLeave(
+      employeeNik,
+      typeOfEmployee.isContract,
+      typeOfEmployee.startContract,
+      typeOfEmployee.endContract,
     );
-
-    if (hasReceiveEmailPermission) {
-      // Jika peran baru memiliki izin, buat atau perbarui EmailPreference
-      await prisma.emailPreference.upsert({
-        where: {
-          userId: employee.user.id,
-        },
-        update: {
-          receiveEmail: true,
-        },
-        create: {
-          userId: employee.user.id,
-          receiveEmail: true,
-        },
-      });
-    } else {
-      // Jika peran baru tidak memiliki izin, hapus EmailPreference jika ada
-      await prisma.emailPreference.deleteMany({
-        where: {
-          userId: employee.user.id,
-        },
-      });
-    }
 
     return successResponse(res, 'Employee updated successfully', employee, 200);
   } catch (error) {
@@ -1461,6 +1460,7 @@ module.exports = {
   enableEmployee,
   getMe,
   updateEmployee,
+  updateRole,
   changePassword,
   resetPassword,
   addEmployee,

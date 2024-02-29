@@ -226,6 +226,11 @@ const permissions = [
     name: 'Gender-Based Special Leave',
     created_at: new Date(),
   },
+  {
+    // 43
+    name: 'Update Role',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {
