@@ -13,17 +13,4 @@ const options = {
 // Get webSetting
 router.get('/', webSettingController.getWebSettings);
 
-// Create color
-router.post('/create', webSettingController.createWebSettings);
-
-// Update color
-router.put('/update-color/:id', webSettingController.updateWebColor);
-
-// Update image
-router.patch(
-  '/update-image/:id',
-  uploadFile(options, 'picture'),
-  webSettingController.updateImageLogo,
-);
-
 module.exports = router;

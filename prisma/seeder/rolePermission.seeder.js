@@ -345,7 +345,7 @@ const rolePermissions = [
   },
   {
     // 39
-    roleId: 3,
+    roleId: 1,
     permissionId: 39,
   },
   {

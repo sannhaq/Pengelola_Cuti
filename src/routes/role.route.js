@@ -27,6 +27,6 @@ router.delete('/delete/:id', checkPermission('Delete Role'), roleController.dele
 router.get('/select', checkPermission('Update Employee'), roleController.selectRole);
 
 // GET role by id
-router.get('/:id', checkPermission('Get All Role'), roleController.getRoleById);
+router.get('/:id', roleController.getRoleById);
 
 module.exports = router;
