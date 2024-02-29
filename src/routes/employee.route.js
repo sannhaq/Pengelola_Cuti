@@ -72,4 +72,7 @@ router.post(
   employeeController.updateAmountOfLeaveForActiveEmployees,
 );
 
+// Patch Role
+router.patch('/update-role/:nik', checkPermission('Update Role'), employeeController.updateRole);
+
 module.exports = router;
