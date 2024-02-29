@@ -26,6 +26,20 @@ router.delete('/delete/:id', checkPermission('Delete Role'), roleController.dele
 // GET role for select
 router.get('/select', checkPermission('Update Employee'), roleController.selectRole);
 
+// GET Group Permission
+router.get(
+  '/group-permission/:id',
+  checkPermission('Get Group Permission'),
+  roleController.getGroupPermissionById,
+);
+
+// GET Group Permission Name
+router.get(
+  '/group-permission-name',
+  checkPermission('Get Group Permission'),
+  roleController.getGroupPermissionName,
+);
+
 // GET role by id
 router.get('/:id', checkPermission('Get All Role'), roleController.getRoleById);
 
