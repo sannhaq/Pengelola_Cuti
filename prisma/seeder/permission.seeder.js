@@ -236,6 +236,11 @@ const permissions = [
     name: 'Update Name',
     created_at: new Date(),
   },
+  {
+    // 45
+    name: 'Get Group Permission',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {

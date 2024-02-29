@@ -370,6 +370,68 @@ async function selectRole(req, res) {
   }
 }
 
+async function getGroupPermissionById(req, res) {
+  const permissionGroupId = parseInt(req.params.id, 10);
+  try {
+    const permissionGroup = await prisma.permissionGroup.findUnique({
+      where: {
+        id: permissionGroupId,
+      },
+      include: {
+        permissionToGroup: {
+          include: {
+            permission: true,
+          },
+        },
+      },
+    });
+
+    if (!permissionGroup) {
+      return errorResponse(res, 'Permission group not found', '', 404);
+    }
+
+    // Mengambil data grup izin beserta izin-izin yang terkait
+    const data = {
+      id: permissionGroup.id,
+      name: permissionGroup.name,
+      permissions: permissionGroup.permissionToGroup.map((permissionGroup) => ({
+        id: permissionGroup.permission.id,
+        name: permissionGroup.permission.name,
+      })),
+    };
+
+    return successResponse(res, 'Successfully retrieved permission group', data, 200);
+  } catch (error) {
+    console.error('Failed to get permission group:', error);
+    return errorResponse(
+      res,
+      'Failed to get permission group',
+      error.message || 'Internal server error',
+      500,
+    );
+  }
+}
+
+async function getGroupPermissionName(req, res) {
+  try {
+    const permissionGroups = await prisma.permissionGroup.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+    return successResponse(res, 'Successfully retrieved permission groups', permissionGroups);
+  } catch (error) {
+    console.error('Failed to get permission groups:', error);
+    return errorResponse(
+      res,
+      'Failed to get permission groups',
+      error.message || 'Internal server error',
+      500,
+    );
+  }
+}
+
 module.exports = {
   updateRole,
   getAllRolesWithPermissions,
@@ -378,4 +440,6 @@ module.exports = {
   getRoleById,
   getPermissions,
   selectRole,
+  getGroupPermissionById,
+  getGroupPermissionName,
 };
