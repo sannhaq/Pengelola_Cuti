@@ -5,6 +5,8 @@ const { employeeSpecialSeed } = require('./employee-special-leave.seeder');
 const { employeeSeed } = require('./employee.seeder');
 const { leaveEmployeeSeed } = require('./leave-employee.seeder');
 const { leaveSeed } = require('./leave.seeder');
+const { permissionGroupSeed } = require('./permission-group.seeder');
+const { permissionToGroupSeed } = require('./permission-to-group.seeder');
 const { permissionSeed } = require('./permission.seeder');
 const { positionSeed } = require('./position.seeder');
 const { roleSeed } = require('./role.seeder');
@@ -30,6 +32,8 @@ async function main() {
   await employeeSpecialSeed();
   await permissionSeed();
   await rolePermissionSeed();
+  await permissionGroupSeed();
+  await permissionToGroupSeed();
   await emailPrefereceSeed();
   await webSettingSeed();
 }

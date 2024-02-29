@@ -184,10 +184,11 @@ model DeductedLeave {
 }
 
 model Permission {
-  id             Int              @id @default(autoincrement())
-  name           String
-  created_at     DateTime         @default(now())
-  rolePermission RolePermission[]
+  id                Int                 @id @default(autoincrement())
+  name              String
+  created_at        DateTime            @default(now())
+  rolePermission    RolePermission[]
+  permissionToGroup PermissionToGroup[]
 }
 
 model RolePermission {
@@ -208,4 +209,19 @@ model WebSetting {
   picture      String
   ipAddress    String
   webColorCode String
+}
+
+model PermissionGroup {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  created_at        DateTime            @default(now())
+  permissionToGroup PermissionToGroup[]
+}
+
+model PermissionToGroup {
+  id                Int             @id @default(autoincrement())
+  permission        Permission      @relation(fields: [permissionId], references: [id])
+  permissionId      Int
+  permissionGroup   PermissionGroup @relation(fields: [permissionGroupId], references: [id])
+  permissionGroupId Int
 }
