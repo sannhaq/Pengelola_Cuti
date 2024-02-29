@@ -57,10 +57,15 @@ const permissionToGroups = [
     permissionGroupId: 1,
     permissionId: 5,
   },
+  // 12
+  {
+    permissionGroupId: 1,
+    permissionId: 44,
+  },
   // End Home (1)
 
   // Start Dashboard (2)
-  // 12
+  // 13
   //   {
   //     permissionGroupId: 2,
   //     permissionId: ,
