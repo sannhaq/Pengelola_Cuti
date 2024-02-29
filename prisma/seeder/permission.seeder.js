@@ -231,6 +231,11 @@ const permissions = [
     name: 'Update Role',
     created_at: new Date(),
   },
+  {
+    // 44
+    name: 'Update Name',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {

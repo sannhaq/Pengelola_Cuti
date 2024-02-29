@@ -859,6 +859,25 @@ async function updateEmployee(req, res) {
   }
 }
 
+async function updateName(req, res) {
+  const employeeNik = req.params.nik;
+  const { name } = req.body;
+  try {
+    const employee = await prisma.employee.update({
+      where: {
+        nik: employeeNik,
+      },
+      data: {
+        name,
+      },
+    });
+    return successResponse(res, 'Employee name updated successfully', employee, 200);
+  } catch (error) {
+    console.error(error);
+    return errorResponse(res, 'An error occurred while updating the employee name', '', 500);
+  }
+}
+
 async function changePassword(req, res) {
   const errors = validationResult(req);
 
@@ -1461,6 +1480,7 @@ module.exports = {
   getMe,
   updateEmployee,
   updateRole,
+  updateName,
   changePassword,
   resetPassword,
   addEmployee,

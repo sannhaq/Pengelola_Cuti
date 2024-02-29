@@ -75,4 +75,7 @@ router.post(
 // Patch Role
 router.patch('/update-role/:nik', checkPermission('Update Role'), employeeController.updateRole);
 
+// Patch Role
+router.patch('/update-name/:nik', checkPermission('Update Role'), employeeController.updateName);
+
 module.exports = router;
