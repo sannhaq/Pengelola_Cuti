@@ -153,7 +153,7 @@ const permissions = [
   },
   {
     // 28
-    name: 'View All Special Leave History',
+    name: 'View All The List Of Special Leave',
     created_at: new Date(),
   },
   {

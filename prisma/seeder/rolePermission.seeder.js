@@ -254,6 +254,11 @@ const rolePermissions = [
     permissionId: 8,
   },
   {
+    // 37
+    roleId: 1,
+    permissionId: 8,
+  },
+  {
     // 38
     roleId: 2,
     permissionId: 11,

@@ -546,13 +546,13 @@ async function rejectOptionalLeave(req, res) {
 
     const { name: rejectBy } = employeeData;
 
-    // // Retrieve the employeeNik of the requesting user
-    // const employeeNik = await prisma.user
-    //   .findUnique({
-    //     where: { id: userId },
-    //     select: { employee: { select: { nik: true } } },
-    //   })
-    //   .then((user) => user.employee?.nik);
+    // Retrieve the employeeNik of the requesting user
+    const employeeNik = await prisma.user
+      .findUnique({
+        where: { id: employeeData.userId },
+        select: { employee: { select: { nik: true } } },
+      })
+      .then((user) => user.employee?.nik);
 
     // Check if the user is authorized to reject the leave
     const isAuthorized = await prisma.leaveEmployee.findUnique({
@@ -560,9 +560,9 @@ async function rejectOptionalLeave(req, res) {
       select: { employeeNik: true, leaveId: true },
     });
 
-    // if (!isAuthorized || isAuthorized.employeeNik !== employeeNik) {
-    //   return errorResponse(res, 'Forbidden', null, 403);
-    // }
+    if (!isAuthorized || isAuthorized.employeeNik !== employeeNik) {
+      return errorResponse(res, 'Forbidden', null, 403);
+    }
 
     // Retrieve deducted leave information
     const deductedInfo = await prisma.deductedLeave.findFirst({
@@ -1319,8 +1319,6 @@ async function sendEmailLeaveMandatoryById(req, res) {
       },
     });
 
-    console.log('Leave data:', leave);
-
     if (!leave) {
       return errorResponse(res, 'Leave not found', '', 404);
     }
@@ -1355,15 +1353,9 @@ async function sendEmailLeaveMandatoryById(req, res) {
       })
       .map(({ employee }) => employee.user.email);
 
-    // Periksa nilai startLeave dan endLeave
-    console.log('Start Date:', leave.startLeave);
-    console.log('End Date:', leave.endLeave);
-
     // Ubah ke format yang diinginkan
     const startDate = new Date(leave.startLeave);
     const endDate = new Date(leave.endLeave);
-    console.log('Parsed Start Date:', startDate);
-    console.log('Parsed End Date:', endDate);
 
     const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
       month: 'long',
@@ -1371,9 +1363,6 @@ async function sendEmailLeaveMandatoryById(req, res) {
     const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
       month: 'long',
     })} ${endDate.getFullYear()}`;
-
-    console.log('Formatted Start Leave:', formattedStartDate);
-    console.log('Formatted End Leave:', formattedEndDate);
 
     const reason = leave.reason;
 
@@ -1561,8 +1550,6 @@ async function sendEmailLeaveOptionalById(req, res) {
       },
     });
 
-    console.log('Leave data:', leave);
-
     if (!leave) {
       return errorResponse(res, 'Leave not found', '', 404);
     }
@@ -1597,15 +1584,9 @@ async function sendEmailLeaveOptionalById(req, res) {
       })
       .map(({ employee }) => employee.user.email);
 
-    // Periksa nilai startLeave dan endLeave
-    console.log('Start Date:', leave.startLeave);
-    console.log('End Date:', leave.endLeave);
-
     // Ubah ke format yang diinginkan
     const startDate = new Date(leave.startLeave);
     const endDate = new Date(leave.endLeave);
-    console.log('Parsed Start Date:', startDate);
-    console.log('Parsed End Date:', endDate);
 
     const formattedStartDate = `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
       month: 'long',
@@ -1613,9 +1594,6 @@ async function sendEmailLeaveOptionalById(req, res) {
     const formattedEndDate = `${endDate.getDate()} ${endDate.toLocaleString('en-US', {
       month: 'long',
     })} ${endDate.getFullYear()}`;
-
-    console.log('Formatted Start Leave:', formattedStartDate);
-    console.log('Formatted End Leave:', formattedEndDate);
 
     const reason = leave.reason;
 

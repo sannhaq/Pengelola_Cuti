@@ -227,6 +227,17 @@ CREATE TABLE "PermissionToGroup" (
     CONSTRAINT "PermissionToGroup_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "LeaveAdjustment" (
+    "id" SERIAL NOT NULL,
+    "employeeNik" TEXT NOT NULL,
+    "negativeLeave" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LeaveAdjustment_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -289,3 +300,6 @@ ALTER TABLE "PermissionToGroup" ADD CONSTRAINT "PermissionToGroup_permissionId_f
 
 -- AddForeignKey
 ALTER TABLE "PermissionToGroup" ADD CONSTRAINT "PermissionToGroup_permissionGroupId_fkey" FOREIGN KEY ("permissionGroupId") REFERENCES "PermissionGroup"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LeaveAdjustment" ADD CONSTRAINT "LeaveAdjustment_employeeNik_fkey" FOREIGN KEY ("employeeNik") REFERENCES "Employee"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;

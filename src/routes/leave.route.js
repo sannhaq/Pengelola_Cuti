@@ -78,20 +78,20 @@ router.get('/all', checkPermission('View All Leave History'), leaveController.al
 // GET All collective leave
 router.get(
   '/collective-leave',
-  checkPermission('View All Leave History'),
+  checkPermission('Send Email for Leave'),
   leaveController.getCollectiveLeave,
 );
 
 // GET All special leave list
 router.get(
   '/special-leaves',
-  checkPermission('View All Special Leave History'),
+  checkPermission('View All The List Of Special Leave'),
   specialLeaveController.getSpecialLeaveList,
 );
 // GET special leave by id
 router.get(
   '/special-leave/:id',
-  checkPermission('View All Special Leave History'),
+  checkPermission('View All The List Of Special Leave'),
   specialLeaveController.getSpecialLeaveById,
 );
 // GET special leave by matching gender

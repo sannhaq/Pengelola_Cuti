@@ -85,6 +85,7 @@ model Employee {
   leaveEmployees        LeaveEmployee[]
   employeeSpecialLeaves EmployeeSpecialLeave[]
   deductedLeaves        DeductedLeave[]
+  leaveAdjustments      LeaveAdjustment[]
 }
 
 model AmountOfLeave {
@@ -224,4 +225,13 @@ model PermissionToGroup {
   permissionId      Int
   permissionGroup   PermissionGroup @relation(fields: [permissionGroupId], references: [id])
   permissionGroupId Int
+}
+
+model LeaveAdjustment {
+  id            Int      @id @default(autoincrement())
+  employee      Employee @relation(fields: [employeeNik], references: [nik])
+  employeeNik   String
+  negativeLeave Int
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 }
