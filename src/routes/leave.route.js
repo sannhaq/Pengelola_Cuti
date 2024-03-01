@@ -193,4 +193,7 @@ router.post(
   leaveController.sendEmailLeaveOptionalById,
 );
 
+router.post('/adjust-leave/:nik', checkPermission('Adjust Leave'), leaveController.adjustLeave);
+router.get('/adjust-leave/:nik', checkPermission('Adjust Leave'), leaveController.historyAdjust);
+
 module.exports = router;

@@ -972,7 +972,7 @@ async function setSpecialLeaveBySelf(req, res) {
   try {
     const { specialLeaveId, startLeave } = req.body;
 
-    const emplooyeData = await prisma.employee.findUnique({
+    const employeeData = await prisma.employee.findUnique({
       where: {
         userId: req.user.id,
       },
@@ -985,7 +985,7 @@ async function setSpecialLeaveBySelf(req, res) {
     // Retrieve employee's gender based on NIK
     const employee = await prisma.employee.findUnique({
       where: {
-        nik: emplooyeData.nik,
+        nik: employeeData.nik,
       },
       select: {
         gender: true,
@@ -1032,7 +1032,7 @@ async function setSpecialLeaveBySelf(req, res) {
     // Create a new entry for employeeSpecialLeave in the database
     const setSpecialLeave = await prisma.employeeSpecialLeave.create({
       data: {
-        employeeNik: emplooyeData.nik,
+        employeeNik: employeeData.nik,
         specialLeaveId,
         startLeave,
         endLeave: setEndLeave(startLeave, specialLeave.amount - 1),
@@ -1040,7 +1040,7 @@ async function setSpecialLeaveBySelf(req, res) {
     });
 
     const leaveEmailData = {
-      employeeName: emplooyeData.name,
+      employeeName: employeeData.name,
       reason: specialLeave.leaveTitle,
       startLeave: setSpecialLeave.startLeave,
       endLeave: setSpecialLeave.endLeave,
@@ -1090,7 +1090,7 @@ async function setSpecialLeaveBySelf(req, res) {
     });
 
     const mailOptions = {
-      from: `"${emplooyeData.name} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
+      from: `"${employeeData.name} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
       bcc: recipientEmails.join(','),
       subject: 'Special Leave Request',
       html: `<html>
@@ -1172,7 +1172,7 @@ async function setSpecialLeaveBySelf(req, res) {
           <div class="footer">
             <p>
               Best regards, <br />
-              ${emplooyeData.name}
+              ${employeeData.name}
             </p>
           </div>
         </div>

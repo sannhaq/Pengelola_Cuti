@@ -232,6 +232,7 @@ model LeaveAdjustment {
   employee      Employee @relation(fields: [employeeNik], references: [nik])
   employeeNik   String
   negativeLeave Int
+  adjustBy      String
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 }

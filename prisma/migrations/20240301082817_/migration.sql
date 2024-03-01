@@ -232,6 +232,7 @@ CREATE TABLE "LeaveAdjustment" (
     "id" SERIAL NOT NULL,
     "employeeNik" TEXT NOT NULL,
     "negativeLeave" INTEGER NOT NULL,
+    "adjustBy" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

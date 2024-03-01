@@ -1761,7 +1761,7 @@ async function createPersonalLeaveByUser(req, res) {
 
     const userId = req.user.id;
 
-    const emplooyeData = await prisma.employee.findUnique({
+    const employeeData = await prisma.employee.findUnique({
       where: {
         userId: userId,
       },
@@ -1783,7 +1783,7 @@ async function createPersonalLeaveByUser(req, res) {
 
     // Retrieve leave amount for the specified employee for previous and current year
     const amountOfLeave = await prisma.amountOfLeave.findMany({
-      where: { employeeNik: emplooyeData.nik },
+      where: { employeeNik: employeeData.nik },
       select: {
         id: true,
         year: true,
@@ -1835,7 +1835,7 @@ async function createPersonalLeaveByUser(req, res) {
     await prisma.leaveEmployee.create({
       data: {
         leaveId: leaveId,
-        employeeNik: emplooyeData.nik,
+        employeeNik: employeeData.nik,
       },
     });
 
@@ -1852,7 +1852,7 @@ async function createPersonalLeaveByUser(req, res) {
       await prisma.deductedLeave.create({
         data: {
           leaveId: leaveId,
-          employeeNik: emplooyeData.nik,
+          employeeNik: employeeData.nik,
           previousYearDeduct: Math.max(0, Math.min(previousYearLeaveEntry.amount, leaveAmount)),
           currentYearDeduct: Math.max(0, currentYearDeduct),
         },
@@ -1862,7 +1862,7 @@ async function createPersonalLeaveByUser(req, res) {
         await prisma.deductedLeave.create({
           data: {
             leaveId: leaveId,
-            employeeNik: emplooyeData.nik,
+            employeeNik: employeeData.nik,
             currentYearDeduct: Math.max(0, Math.min(currentYearLeaveEntry.amount, leaveAmount)),
           },
         });
@@ -1870,7 +1870,7 @@ async function createPersonalLeaveByUser(req, res) {
     }
 
     const leaveEmailData = {
-      employeeName: emplooyeData.name,
+      employeeName: employeeData.name,
       reason: leaveData.reason,
       startLeave: leaveData.startLeave,
       endLeave: leaveData.endLeave,
@@ -1912,7 +1912,7 @@ async function createPersonalLeaveByUser(req, res) {
       leaveEmailData,
       formattedStartDate,
       formattedEndDate,
-      emplooyeData,
+      employeeData,
     );
 
     const transporter = nodemailer.createTransport({
@@ -1927,7 +1927,7 @@ async function createPersonalLeaveByUser(req, res) {
     });
 
     const mailOptions = {
-      from: `"${emplooyeData.name} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
+      from: `"${employeeData.name} - ${req.user.email}" <${process.env.GMAIL_USER}>`,
       bcc: recipientEmails.join(','),
       subject: 'Leave Request',
       html: emailView,
@@ -1938,6 +1938,113 @@ async function createPersonalLeaveByUser(req, res) {
     return successResponse(res, 'Data succcessfully created', leaveData);
   } catch (e) {
     console.log(e);
+    return errorResponse(res, 'Internal server error', null);
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function adjustLeave(req, res) {
+  try {
+    const { nik } = req.params;
+
+    const currentYear = new Date().getFullYear();
+
+    const { user } = req;
+
+    const userLogin = await prisma.employee.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    const { name: adjustBy } = userLogin;
+
+    const employeeData = await prisma.employee.findUnique({
+      where: { nik: nik },
+      select: {
+        name: true,
+        amountOfLeave: {
+          where: { year: currentYear },
+          select: {
+            id: true,
+            amount: true,
+            year: true,
+          },
+        },
+      },
+    });
+    const leaveAmount = employeeData.amountOfLeave?.[0]?.amount || 0;
+    if (leaveAmount >= 0) {
+      return errorResponse(res, 'Leave balance is not negative', null, 400);
+    }
+
+    const adjustAmount = Math.abs(employeeData.amountOfLeave[0].amount);
+
+    const data = await prisma.leaveAdjustment.create({
+      data: {
+        employeeNik: nik,
+        negativeLeave: adjustAmount,
+        adjustBy: adjustBy,
+      },
+    });
+
+    await prisma.amountOfLeave.update({
+      where: { id: parseInt(employeeData.amountOfLeave[0].id) },
+      data: {
+        amount: 0,
+      },
+    });
+
+    return successResponse(res, 'Success adjust leave', data, 200);
+  } catch (e) {
+    console.log(e);
+    return errorResponse(res, 'Internal server error', null);
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+async function historyAdjust(req, res) {
+  try {
+    const { nik } = req.params;
+
+    const employeeData = await prisma.employee.findMany({
+      where: { nik: nik },
+      orderBy: {
+        created_at: 'desc',
+      },
+      include: {
+        leaveAdjustments: {
+          select: {
+            negativeLeave: true,
+            adjustBy: true,
+            created_at: true,
+          },
+        },
+      },
+    });
+
+    if (!employeeData[0]?.leaveAdjustments?.length) {
+      return errorResponse(res, 'No adjustment history found', null, 404);
+    }
+
+    const history = employeeData.map((item) => ({
+      nik: item.nik,
+      name: item.name,
+      leaveAdjustments: item.leaveAdjustments.map((adjustment) => ({
+        negativeLeave: adjustment.negativeLeave,
+        adjustBy: adjustment.adjustBy,
+        month: new Date(adjustment.created_at).getMonth() + 1,
+      })),
+    }));
+
+    return successResponse(res, 'Success get history adjust leave', history, 200);
+  } catch {
     return errorResponse(res, 'Internal server error', null);
   }
 }
@@ -1959,4 +2066,6 @@ module.exports = {
   sendEmailLeaveMandatoryById,
   sendEmailLeaveOptionalById,
   createPersonalLeaveByUser,
+  adjustLeave,
+  historyAdjust,
 };
