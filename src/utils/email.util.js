@@ -94,7 +94,7 @@ const getLeaveRequestEmailTempalte = (
   leaveEmailData,
   formattedStartDate,
   formattedEndDate,
-  emplooyeData,
+  employeeData,
 ) => {
   return `
     <html>
@@ -176,7 +176,7 @@ const getLeaveRequestEmailTempalte = (
           <div class="footer">
             <p>
               Best regards, <br />
-              ${emplooyeData.name}
+              ${employeeData.name}
             </p>
           </div>
         </div>

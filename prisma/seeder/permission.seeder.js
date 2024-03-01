@@ -241,6 +241,11 @@ const permissions = [
     name: 'Get Group Permission',
     created_at: new Date(),
   },
+  {
+    // 46
+    name: 'Adjust Leave',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionSeed() {
