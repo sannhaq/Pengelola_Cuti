@@ -326,6 +326,13 @@ async function getPermissions(req, res) {
 
     // Retrieve permissions based on pagination settings
     const permissions = await prisma.permission.findMany({
+      where: {
+        NOT: {
+          name: {
+            in: ['Create Role', 'Update Role', 'Delete Role'],
+          },
+        },
+      },
       select: {
         id: true,
         name: true,
@@ -342,7 +349,7 @@ async function getPermissions(req, res) {
       200,
       pagination.meta,
     );
-  } catch {
+  } catch (e) {
     return errorResponse(res, 'Failed to retrieve permissions', null, 500);
   }
 }
