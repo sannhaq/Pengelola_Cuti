@@ -126,6 +126,60 @@ const permissionToGroups = [
     permissionId: 6,
   },
   // End Dashboard (2)
+
+  // Start List Of Leave (3)
+  // 1
+  {
+    permissionGroupId: 3,
+    permissionId: 27,
+  },
+  // 2
+  {
+    permissionGroupId: 3,
+    permissionId: 26,
+  },
+  // 3
+  {
+    permissionGroupId: 3,
+    permissionId: 31,
+  },
+  // 4
+  {
+    permissionGroupId: 3,
+    permissionId: 34,
+  },
+  // End List Of Leave (3)
+
+  // Start Email Organizer
+  // 1
+  {
+    permissionGroupId: 4,
+    permissionId: 38,
+  },
+  // End Email Organizer
+
+  // Start List Of Position
+  // 1
+  {
+    permissionGroupId: 5,
+    permissionId: 10,
+  },
+  // 2
+  {
+    permissionGroupId: 5,
+    permissionId: 11,
+  },
+  // 3
+  {
+    permissionGroupId: 5,
+    permissionId: 12,
+  },
+  // 4
+  {
+    permissionGroupId: 5,
+    permissionId: 13,
+  },
+  // End List Of Position
 ];
 
 async function permissionToGroupSeed() {

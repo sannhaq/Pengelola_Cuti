@@ -11,6 +11,21 @@ const permissionGroups = [
     name: 'Dashboard',
     created_at: new Date(),
   },
+  // 3
+  {
+    name: 'List Of Leave',
+    created_at: new Date(),
+  },
+  // 4
+  {
+    name: 'Email Organizer',
+    created_at: new Date(),
+  },
+  // 5
+  {
+    name: 'List Of Position',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionGroupSeed() {
