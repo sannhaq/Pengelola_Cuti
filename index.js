@@ -11,10 +11,17 @@ const fs = require('fs');
 // routers
 const routes = require('./src/routes/index.route');
 // config
-const config = require('./src/configs/general.config');
+const { getConfig } = require('./config');
 const { getIpAddress } = require('./src/configs/ip.config');
 
-const port = config.port || 3000;
+// read config.json
+const config = getConfig();
+if (!config) {
+  console.error('Failed to load config data. Existing');
+  process.exit(1);
+}
+
+const port = config.PORT || 3000;
 // const host = config.host || 'localhost';
 const ipAddress = getIpAddress();
 
