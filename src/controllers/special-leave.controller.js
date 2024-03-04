@@ -8,6 +8,15 @@ const {
   successResponse,
 } = require('../utils/helper.util');
 const { leaveRejectEmailTemplate, getLeaveApprovalEmailTemplate } = require('../utils/email.util');
+const { getConfig } = require('../../config');
+const config = getConfig();
+if (!config) {
+  console.error('Failed to load config data. Existing');
+  process.exit(1);
+}
+
+const gmailName = config.GMAIL_USER;
+const gmailPass = config.GMAIL_PASSWORD;
 
 /**
  * @param {import('express').Request} req
@@ -796,8 +805,8 @@ async function approveSpecialLeave(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
@@ -923,8 +932,8 @@ async function rejectSpecialLeave(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
@@ -1084,8 +1093,8 @@ async function setSpecialLeaveBySelf(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 

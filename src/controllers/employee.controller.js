@@ -1358,6 +1358,24 @@ async function addEmployee(req, res) {
       },
     });
 
+    const startContractDate = moment.utc(startContract).startOf('day');
+
+    // Ambil semua entri dari tabel Leave yang memenuhi kriteria
+    const relevantLeaves = await prisma.leave.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { typeOfLeaveId: 1 }, // ID untuk cuti yang wajib
+              { typeOfLeaveId: 2 }, // ID untuk cuti yang opsional
+            ],
+          },
+          { startLeave: { gt: startContractDate.toDate() } }, // Memeriksa apakah startLeave setelah startContract
+        ],
+      },
+    });
+    console.log('🚀 ~ addEmployee ~ relevantLeaves:', relevantLeaves);
+
     const currentUser = await prisma.user.findUnique({
       where: {
         id: req.user.id,
