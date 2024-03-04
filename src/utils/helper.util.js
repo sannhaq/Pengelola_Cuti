@@ -3,7 +3,8 @@ const fs = require('fs');
 const multer = require('multer');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const config = require('../configs/general.config');
+const { getConfig } = require('../../config');
+const config = getConfig();
 const { getIpAddress } = require('../configs/ip.config');
 
 function sum(a, b) {
@@ -199,7 +200,7 @@ function getFilePath(url) {
 }
 
 function generateAssetUrl(fileName) {
-  const port = config.port || 3000;
+  const port = config.PORT || 3000;
   const ipAddress = getIpAddress();
   return `https://${ipAddress}:${port}/public/assets/images/${fileName}`;
 }
