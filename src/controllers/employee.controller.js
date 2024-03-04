@@ -24,8 +24,8 @@ const {
 
 async function getAll(req, res) {
   try {
-    // Extract page, perPage, search, and orderBy from query parameters
-    const { page, perPage, search, orderBy, isWorking, position } = req.query;
+    // Extract page, perPage, search, orderBy, isWorking, position, amount, dan amountType dari query parameters
+    const { page, perPage, search, orderBy, isWorking, position, amount, amountType } = req.query;
 
     // Perform pagination using custom paginate function
     const pagination = await paginate(prisma.employee, { page, perPage });
@@ -56,6 +56,18 @@ async function getAll(req, res) {
     };
 
     const filter = {};
+
+    const currentYear = new Date().getFullYear();
+    // Build filter berdasarkan `amountType` jika `amount` ada atau abaikan jika tidak
+    if (amountType) {
+      filter.amountOfLeave = {
+        some: {
+          year: currentYear,
+          amount: amountType === 'positive' ? { gt: 0 } : { lt: 0 },
+        },
+      };
+    }
+
     // Build search conditions dynamically based on provided search parameter
     if (search) {
       filter.OR = [
