@@ -16,7 +16,7 @@ const configServer = (app) => {
 
   app.use(
     cors({
-      origin: origins.split(','),
+      origin: '*',
       credentials: true,
     }),
   );
