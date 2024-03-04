@@ -6,7 +6,6 @@ const { configServer } = require('./src/configs/server.config');
 
 // Import OpenSSL for HTTPS
 const https = require('https');
-const http = require('http');
 const fs = require('fs');
 
 // routers
@@ -48,7 +47,7 @@ const options = {
 };
 
 const server = https.createServer(options, app);
-const httpServer = http.createServer(app);
+
 // endpoint
 app.get('/', (req, res) => {
   res.send('Hello world');
@@ -61,12 +60,6 @@ app.get('/test', (req, res) => {
 
 // Mount routes under the /api prefix
 app.use('/api', routes);
-
-// const httpPort = 80; // Port for HTTP
-
-// httpServer.listen(httpPort, ipAddress, () => {
-//   console.log(`HTTP server is running on http://${ipAddress}:${httpPort}`);
-// });
 
 // logger
 server.listen(port, ipAddress, () => {
