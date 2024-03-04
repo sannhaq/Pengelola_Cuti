@@ -2,6 +2,9 @@ const { PrismaClient } = require('@prisma/client');
 
 const { validationResult } = require('express-validator');
 
+const { getConfig } = require('../../config');
+const config = getConfig();
+
 const nodemailer = require('nodemailer');
 const schedule = require('node-schedule');
 const moment = require('moment');
@@ -954,6 +957,14 @@ async function resetPassword(req, res) {
       },
     });
 
+    if (!config) {
+      console.error('Failed to load config data. Existing');
+      process.exit(1);
+    }
+
+    const gmailName = config.GMAIL_USER;
+    const gmailPass = config.GMAIL_PASSWORD;
+
     // Send an email with the new password using Nodemailer
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -961,13 +972,13 @@ async function resetPassword(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
     const mailOptions = {
-      from: `"${req.user.email}" <${process.env.GMAIL_USER}>`,
+      from: `"${req.user.email}" <${gmailName}>`,
       to: employee.user.email,
       subject: 'Password Reset',
       html: `
@@ -1350,6 +1361,14 @@ async function addEmployee(req, res) {
 
     const senderName = currentUser.employee.name;
 
+    if (!config) {
+      console.error('Failed to load config data. Existing');
+      process.exit(1);
+    }
+
+    const gmailName = config.GMAIL_USER;
+    const gmailPass = config.GMAIL_PASSWORD;
+
     // Konfigurasi transporter untuk mengirim email
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -1357,8 +1376,8 @@ async function addEmployee(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
