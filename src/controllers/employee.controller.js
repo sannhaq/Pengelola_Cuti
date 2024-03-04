@@ -18,6 +18,8 @@ const {
   paginate,
   successResponseWithPage,
   formatEmployeeData,
+  updateLeaveAmountForEmployee,
+  calculateLeaveAmount,
 } = require('../utils/helper.util');
 
 async function getAll(req, res) {
@@ -1358,24 +1360,6 @@ async function addEmployee(req, res) {
       },
     });
 
-    const startContractDate = moment.utc(startContract).startOf('day');
-
-    // Ambil semua entri dari tabel Leave yang memenuhi kriteria
-    const relevantLeaves = await prisma.leave.findMany({
-      where: {
-        AND: [
-          {
-            OR: [
-              { typeOfLeaveId: 1 }, // ID untuk cuti yang wajib
-              { typeOfLeaveId: 2 }, // ID untuk cuti yang opsional
-            ],
-          },
-          { startLeave: { gt: startContractDate.toDate() } }, // Memeriksa apakah startLeave setelah startContract
-        ],
-      },
-    });
-    console.log('🚀 ~ addEmployee ~ relevantLeaves:', relevantLeaves);
-
     const currentUser = await prisma.user.findUnique({
       where: {
         id: req.user.id,
@@ -1390,6 +1374,59 @@ async function addEmployee(req, res) {
     });
 
     const senderName = currentUser.employee.name;
+
+    const startContractDate = moment.utc(startContract).startOf('day');
+
+    // Ambil semua entri dari tabel Leave yang memenuhi kriteria
+    const relevantLeaves = await prisma.leave.findMany({
+      where: {
+        AND: [
+          {
+            OR: [{ typeOfLeaveId: 1 }, { typeOfLeaveId: 2 }],
+          },
+          { startLeave: { gt: startContractDate.toDate() } },
+        ],
+      },
+    });
+
+    for (const leave of relevantLeaves) {
+      const leaveId = leave.id;
+      let numberOfLeaveDays = calculateLeaveAmount(leave.startLeave, leave.endLeave);
+      let today = new Date();
+      let currentYear = today.getFullYear();
+      let previousYear = currentYear - 1;
+
+      if (leave.emailSent) {
+        // Jika emailSent adalah true, panggil fungsi updateLeaveAmountForEmployee
+        await updateLeaveAmountForEmployee(
+          createdEmployee,
+          numberOfLeaveDays,
+          leaveId,
+          previousYear,
+          currentYear,
+        );
+
+        // Jalankan juga bagian prisma.leaveEmployee.createMany
+        await prisma.leaveEmployee.createMany({
+          data: {
+            leaveId,
+            employeeNik: createdEmployee.nik,
+            status: 'APPROVE',
+            approveBy: senderName,
+          },
+        });
+      } else {
+        // Jika emailSent adalah false, hanya lakukan create leaveEmployee saja
+        await prisma.leaveEmployee.createMany({
+          data: {
+            leaveId,
+            employeeNik: createdEmployee.nik,
+            status: 'APPROVE',
+            approveBy: senderName,
+          },
+        });
+      }
+    }
 
     if (!config) {
       console.error('Failed to load config data. Existing');

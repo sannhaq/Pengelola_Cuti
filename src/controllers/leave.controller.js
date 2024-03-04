@@ -729,11 +729,19 @@ async function createPersonalLeave(req, res) {
       });
     } else {
       if (currentYearLeaveEntry) {
+        // Ambil tahun dari tanggal cuti yang diambil
+        const startYear = new Date(startLeave).getFullYear();
+        const endYear = new Date(endLeave).getFullYear();
+
+        // Jika cuti melewati tahun ini, maka nilai currentYearDeduct adalah cuti yang diambil selama tahun ini
+        const currentYearDeduct =
+          startYear === currentYear && endYear === currentYear ? leaveAmount : 0;
+
         await prisma.deductedLeave.create({
           data: {
             leaveId: leaveId,
             employeeNik: nik,
-            currentYearDeduct: Math.max(0, Math.min(currentYearLeaveEntry.amount, leaveAmount)),
+            currentYearDeduct: currentYearDeduct,
           },
         });
       }
