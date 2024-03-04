@@ -6,12 +6,13 @@ const { configServer } = require('./src/configs/server.config');
 
 // Import OpenSSL for HTTPS
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 
 // routers
 const routes = require('./src/routes/index.route');
 // config
-const { getConfig } = require('./config');
+const { getConfig, saveConfigData } = require('./config');
 const { getIpAddress } = require('./src/configs/ip.config');
 
 // read config.json
@@ -24,6 +25,11 @@ if (!config) {
 const port = config.PORT || 3000;
 // const host = config.host || 'localhost';
 const ipAddress = getIpAddress();
+
+if (config.ipAddress !== ipAddress) {
+  config.ipAddress = ipAddress;
+  saveConfigData(config);
+}
 
 const app = express();
 const prisma = new PrismaClient({
@@ -42,6 +48,7 @@ const options = {
 };
 
 const server = https.createServer(options, app);
+const httpServer = http.createServer(app);
 // endpoint
 app.get('/', (req, res) => {
   res.send('Hello world');
@@ -54,6 +61,12 @@ app.get('/test', (req, res) => {
 
 // Mount routes under the /api prefix
 app.use('/api', routes);
+
+// const httpPort = 80; // Port for HTTP
+
+// httpServer.listen(httpPort, ipAddress, () => {
+//   console.log(`HTTP server is running on http://${ipAddress}:${httpPort}`);
+// });
 
 // logger
 server.listen(port, ipAddress, () => {

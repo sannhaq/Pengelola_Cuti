@@ -17,6 +17,15 @@ const {
   getLeaveRequestEmailTempalte,
   leaveRejectEmailTemplate,
 } = require('../utils/email.util');
+const { getConfig } = require('../../config');
+const config = getConfig();
+if (!config) {
+  console.error('Failed to load config data. Existing');
+  process.exit(1);
+}
+
+const gmailName = config.GMAIL_USER;
+const gmailPass = config.GMAIL_PASSWORD;
 
 /**
  * @param {import('express').Request} req
@@ -858,8 +867,8 @@ async function approvePersonalLeave(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
@@ -1011,8 +1020,8 @@ async function rejectPersonalLeave(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
@@ -1373,8 +1382,8 @@ async function sendEmailLeaveMandatoryById(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
@@ -1604,8 +1613,8 @@ async function sendEmailLeaveOptionalById(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
@@ -1921,8 +1930,8 @@ async function createPersonalLeaveByUser(req, res) {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
+        user: gmailName,
+        pass: gmailPass,
       },
     });
 
