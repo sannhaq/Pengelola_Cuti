@@ -26,6 +26,11 @@ const permissionGroups = [
     name: 'List Of Position',
     created_at: new Date(),
   },
+  // 6
+  {
+    name: 'Special Leave List',
+    created_at: new Date(),
+  },
 ];
 
 async function permissionGroupSeed() {
