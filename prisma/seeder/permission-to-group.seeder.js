@@ -180,6 +180,28 @@ const permissionToGroups = [
     permissionId: 13,
   },
   // End List Of Position
+
+  // Start Special Leave
+  // 1
+  {
+    permissionGroupId: 6,
+    permissionId: 28,
+  },
+  // 1
+  {
+    permissionGroupId: 6,
+    permissionId: 29,
+  },
+  // 1
+  {
+    permissionGroupId: 6,
+    permissionId: 30,
+  },
+  // 1
+  {
+    permissionGroupId: 6,
+    permissionId: 36,
+  },
 ];
 
 async function permissionToGroupSeed() {
