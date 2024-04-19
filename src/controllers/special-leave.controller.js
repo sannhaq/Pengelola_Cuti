@@ -369,25 +369,7 @@ async function getSpecialLeaveByNik(req, res) {
 
     // If no special leave history found for the employee
     if (!leaveHistory || leaveHistory.length === 0) {
-      // Retrieve basic employee information
-      const employeeInfo = await prisma.employee.findUnique({
-        where: { nik: nik },
-        select: {
-          nik: true,
-          name: true,
-        },
-      });
-
-      const total = 0;
-      const currPage = 0;
-      const lastPage = 0;
-
-      return successResponseWithPage(res, 'No special leave history found', employeeInfo, 200, {
-        ...pagination.meta,
-        total,
-        currPage,
-        lastPage,
-      });
+      return errorResponse(res, 'No special leave found', null, 404);
     }
 
     // Count total special leave entries for the specified employee

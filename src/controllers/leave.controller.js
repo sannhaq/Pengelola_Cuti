@@ -377,9 +377,8 @@ async function optionalLeave(req, res) {
             nik: true,
             leaveEmployees: {
               where: {
-                leave: { typeOfLeaveId: 2 },
                 status: 'APPROVE',
-                leave: { emailSent: true },
+                leave: { emailSent: true, typeOfLeaveId: 2 },
               },
               select: {
                 id: true,
