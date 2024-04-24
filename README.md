@@ -8,7 +8,6 @@ This is a server for In Room Service System. It is made with [Node.js](https://n
   - [Step by Step to Create new API](#step-by-step-to-create-new-api)
   - [For Better Developer Experience](#for-better-developer-experience)
     - [Principles](#principles)
-    - [Extensions](#extensions)
 - [References](#references)
 
 ## Getting Started
