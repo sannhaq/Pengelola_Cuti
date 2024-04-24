@@ -23,7 +23,7 @@ This is a server for In Room Service System. It is made with [Node.js](https://n
 1. Clone the repo
 
 ```sh
-git clone https://github.com/sannhaq/pembagian_cuti.git
+git clone https://github.com/sannhaq/Pengelola_Cuti.git
 ```
 
 2. Install NPM packages
